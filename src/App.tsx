@@ -223,12 +223,20 @@ export default function App() {
   const [sandboxParserMethod, setSandboxParserMethod] = useState<"Gemini AI" | "Local Heuristics">("Gemini AI");
 
   // Apps Script Web App Connection Configs
+  const [customGeminiApiKey, setCustomGeminiApiKey] = useState<string>(() => {
+    return localStorage.getItem("scalesmart_gemini_api_key") || "";
+  });
+  const [showApiKey, setShowApiKey] = useState(false);
   const [appsScriptUrl, setAppsScriptUrl] = useState<string>(() => {
     return localStorage.getItem("scalesmart_appscript_url") || "";
   });
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
   const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_gemini_api_key", customGeminiApiKey);
+  }, [customGeminiApiKey]);
 
   useEffect(() => {
     localStorage.setItem("scalesmart_appscript_url", appsScriptUrl);
@@ -485,7 +493,10 @@ export default function App() {
       const response = await fetch("/api/parse-signal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sandboxEmailText }),
+        body: JSON.stringify({ 
+          text: sandboxEmailText,
+          customApiKey: customGeminiApiKey.trim() || undefined
+        }),
       });
 
       if (!response.ok) {
@@ -1720,6 +1731,51 @@ function doPost(e) {
                 </p>
 
                 <div className="space-y-3">
+                  {/* Custom Gemini API Key Browser Input Override */}
+                  <div className={`p-3 border rounded-lg ${isDark ? "bg-[#181818] border-slate-800" : "bg-[#faf9f6] border-[#eae9e6]"}`}>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className={`text-[10px] font-mono uppercase tracking-wider font-bold flex items-center gap-1.5 ${isDark ? "text-slate-200" : "text-[#37352f]"}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        Gemini API Key Override (Local Storage)
+                      </label>
+                      <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded ${
+                        customGeminiApiKey.trim() 
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                          : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                      }`}>
+                        {customGeminiApiKey.trim() ? "Active override" : "Using system default / fallback only"}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type={showApiKey ? "text" : "password"}
+                        value={customGeminiApiKey}
+                        onChange={(e) => setCustomGeminiApiKey(e.target.value)}
+                        placeholder="AIzaSy... (Unlocks high-frequency processing / bypasses default limits)"
+                        className={`font-mono text-xs flex-1 border rounded px-2.5 py-1.5 focus:outline-none focus:border-blue-500 ${theme.bgInput}`}
+                      />
+                      {customGeminiApiKey.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => setCustomGeminiApiKey("")}
+                          className={`px-2.5 py-1.5 rounded text-[10px] font-mono border hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 transition ${theme.bgButtonSec}`}
+                        >
+                          Clear Key
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className={`px-3 py-1.5 rounded text-[10px] select-none font-mono transition border ${theme.bgButtonSec}`}
+                      >
+                        {showApiKey ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                    <p className={`text-[9px] ${theme.textSecondary} font-mono mt-1`}>
+                      Your key is securely transmitted via TLS proxy to the backend API without logging. Perfect for switching off rate limits!
+                    </p>
+                  </div>
+
                   <div className="relative">
                     <textarea
                       rows={6}

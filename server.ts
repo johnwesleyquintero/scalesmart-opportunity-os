@@ -12,16 +12,16 @@ async function startServer() {
 
   // API Route: AI Signal Parser endpoint using Gemini 3.5 Flash
   app.post("/api/parse-signal", async (req, res) => {
-    const { text } = req.body;
+    const { text, customApiKey } = req.body;
     if (!text || typeof text !== "string") {
       return res.status(400).json({ error: "No text signal provided to parser." });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(400).json({ 
-        error: "GEMINI_API_KEY is not configured in environment variables.",
-        isDemo: true
+        error: "No Gemini API key detected. Please configure a key in the settings panel or enter your own custom API Key in the browser input box.",
+        needsKey: true
       });
     }
 
