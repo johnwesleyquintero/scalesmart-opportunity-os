@@ -3,7 +3,7 @@ import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "./typ
 import {
   Plus, X, Pencil, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, Copy, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
-  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon, GripVertical,
+  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon, GripVertical, Search,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 
@@ -1152,21 +1152,23 @@ function doPost(e) {
 
   return (
     <div className={`min-h-screen ${theme.bgApp} flex flex-col font-sans antialiased selection:bg-slate-800`}>
-      
-      {/* 1. Header with System Architecture Integration */}
-      <header className={`border-b ${theme.border} px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${theme.bgHeader}`} id="header">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+       {/* 1. Header with System Architecture Integration */}
+      <header className={`border-b ${theme.border} px-5 py-2.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${theme.bgHeader} select-none`} id="header">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
           <div className="flex items-center gap-2 justify-between w-full sm:w-auto">
-            <span className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-[#37352f]"} font-mono`}>ScaleSmart OS</span>
-            <span className={`text-xs ${isDark ? "text-slate-400 bg-slate-850/80 border-slate-700" : "text-neutral-500 bg-neutral-200/50 border-neutral-300"} px-2.5 py-1 rounded-md border font-mono`}>v1.0 (Radar)</span>
+            <span className={`text-lg font-extrabold tracking-tight ${isDark ? "text-white" : "text-[#111111]"} font-mono`}>ScaleSmart OS</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="System status active" />
+              <span className={`text-[10px] ${isDark ? "text-slate-400 bg-slate-900 border-slate-755" : "text-neutral-500 bg-neutral-100 border-neutral-250"} px-2 py-0.5 rounded font-mono border`}>v1.0 (Radar)</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-1.5 p-0.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-[#eae9e6]/50 border-neutral-300"} border rounded-lg`}>
+            <div className={`flex items-center gap-1 p-0.5 ${isDark ? "bg-slate-950 border-slate-850" : "bg-[#f1f0ee] border-neutral-250"} border rounded-lg`}>
               <button
                 onClick={() => setActiveTab("cockpit")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold font-mono transition flex items-center gap-1.5 cursor-pointer ${
                   activeTab === "cockpit" 
-                    ? (isDark ? "bg-slate-800 text-white border border-slate-700" : "bg-white text-[#37352f] border border-[#eae9e6] shadow-xs") 
+                    ? (isDark ? "bg-slate-800 text-white border border-slate-700 shadow-sm" : "bg-white text-[#111111] border border-[#dad9d4] shadow-xs") 
                     : `${theme.textSecondary} hover:text-blue-500`
                 }`}
               >
@@ -1174,15 +1176,15 @@ function doPost(e) {
               </button>
               <button
                 onClick={() => setActiveTab("radar")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 relative ${
+                className={`px-3 py-1 rounded-md text-xs font-semibold font-mono transition flex items-center gap-1.5 relative cursor-pointer ${
                   activeTab === "radar" 
-                    ? (isDark ? "bg-slate-800 text-white border border-slate-700" : "bg-white text-[#37352f] border border-[#eae9e6] shadow-xs") 
+                    ? (isDark ? "bg-slate-800 text-white border border-slate-700 shadow-sm" : "bg-white text-[#111111] border border-[#dad9d4] shadow-xs") 
                     : `${theme.textSecondary} hover:text-blue-500`
                 }`}
               >
                 <Radio className="w-3.5 h-3.5 text-blue-500" /> Signal Radar
                 {radarSignals.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping"></span>
                 )}
               </button>
             </div>
@@ -1190,10 +1192,10 @@ function doPost(e) {
             {/* Theme Toggle Button */}
             <button
               onClick={() => setIsDark(!isDark)}
-              className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${theme.bgButtonSec}`}
+              className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center cursor-pointer ${theme.bgButtonSec}`}
               title="Toggle theme mode"
             >
-              {isDark ? <Sun className="w-4 h-4 text-amber-450" /> : <Moon className="w-4 h-4 text-[#37352f]" />}
+              {isDark ? <Sun className="w-3.5 h-3.5 text-amber-450" /> : <Moon className="w-3.5 h-3.5 text-[#37352f]" />}
             </button>
 
             {/* Sidebar Viewport Control Panel */}
@@ -1201,25 +1203,25 @@ function doPost(e) {
               <div className={`flex items-center gap-1 border-l pl-2 ml-1 ${isDark ? "border-slate-800" : "border-[#eae9e6]"}`}>
                 <button
                   onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${
+                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center cursor-pointer ${
                     isLeftSidebarOpen 
                       ? (isDark ? "bg-blue-500/20 text-blue-400 border-blue-500/35" : "bg-blue-50 text-blue-600 border-blue-200") 
                       : theme.bgButtonSec
                   }`}
                   title={isLeftSidebarOpen ? "Hide Left Sidebar Filters (Ctrl+\\)" : "Show Left Sidebar Filters"}
                 >
-                  {isLeftSidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+                  {isLeftSidebarOpen ? <PanelLeftClose className="w-3.5 h-3.5" /> : <PanelLeftOpen className="w-3.5 h-3.5" />}
                 </button>
                 <button
                   onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${
+                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center cursor-pointer ${
                     isRightSidebarOpen 
                       ? (isDark ? "bg-blue-500/20 text-blue-400 border-blue-500/35" : "bg-blue-50 text-blue-600 border-blue-200") 
                       : theme.bgButtonSec
                   }`}
                   title={isRightSidebarOpen ? "Hide Right Detail Inspector" : "Show Right Detail Inspector"}
                 >
-                  {isRightSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+                  {isRightSidebarOpen ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
                 </button>
               </div>
             )}
@@ -1228,33 +1230,38 @@ function doPost(e) {
 
         {activeTab === "cockpit" ? (
           <div className="flex items-center gap-3 w-full md:w-auto" id="controls">
-            <input
-              type="text"
-              placeholder="Search Company or Role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`border rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-64 ${theme.bgInput}`}
-            />
+            <div className="relative w-full sm:w-60">
+              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-3.5 h-3.5" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search Company or Role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`border rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 w-full ${theme.bgInput}`}
+              />
+            </div>
             <button
               onClick={openAddModal}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm px-4 py-2 rounded flex items-center gap-1.5 shrink-0 transition"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 transition cursor-pointer shadow-xs"
             >
-              <Plus className="w-4 h-4" /> Add Opportunity
+              <Plus className="w-3.5 h-3.5" /> Add Opportunity
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button
               onClick={handleExportCSV}
-              className={`border font-medium text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition ${theme.bgButtonSec}`}
+              className={`border font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer ${theme.bgButtonSec}`}
             >
-              <Download className="w-4 h-4" /> Export Ledger CSV
+              <Download className="w-3.5 h-3.5" /> Export Ledger CSV
             </button>
             <button
               onClick={handleCopyCode}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition cursor-pointer shadow-xs"
             >
-              <Copy className="w-4 h-4" /> {hasCopiedCode ? "Copied Apps Script" : "Copy Apps Script"}
+              <Copy className="w-3.5 h-3.5" /> {hasCopiedCode ? "Copied Apps Script" : "Copy Apps Script"}
             </button>
           </div>
         )}
