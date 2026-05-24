@@ -51,7 +51,7 @@ ${text}
         model: "gemini-3.5-flash",
         contents: promptText,
         config: {
-          systemInstruction: "Extract company details, role, status map, and other core metadata. Status must map exactly to one of: 'NEW', 'APPLIED', 'ASSESSMENT_PENDING', 'INTERVIEWING', 'OFFER', 'REJECTED', 'ARCHIVED'. Output in strict JSON conforming to the structural request schema.",
+          systemInstruction: "Extract company details, role, status map, and determine the operational Tier level based on the following e-commerce/Amazon recruitment framework:\n- T1 (Execution / VA Level): Simple operations, data entry, product research, basic Amazon/Shopify tasks, SOP-following roles.\n- T2 (Operations / Specialist Level - Default): Amazon ops, catalog management, PPC support, inventory coordination, Shopify/Amazon hybrid roles, multi-task execution roles.\n- T3 (Systems / Architect Level): Agency roles, leadership roles, backend Amazon roles, catalog recovery, SOP creation, multi-brand operations, strategic or PM-level roles.\n\nStatus must map exactly to one of: 'NEW', 'APPLIED', 'ASSESSMENT_PENDING', 'INTERVIEWING', 'OFFER', 'REJECTED', 'ARCHIVED'. Output in strict JSON conforming to the structural request schema.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -67,6 +67,10 @@ ${text}
               status: {
                 type: Type.STRING,
                 description: "Recruitment milestone status. Must be exactly one of: 'NEW', 'APPLIED', 'ASSESSMENT_PENDING', 'INTERVIEWING', 'OFFER', 'REJECTED', 'ARCHIVED'."
+              },
+              tier: {
+                type: Type.STRING,
+                description: "Determined operational Tier based on role scope. Must be 'T1', 'T2', or 'T3'."
               },
               priority: {
                 type: Type.STRING,
@@ -85,7 +89,7 @@ ${text}
                 description: "A bulleted professional context block summarizing the stage (maximum 3 bullet points with timeline next steps)."
               }
             },
-            required: ["companyName", "roleTitle", "status", "priority", "notesSummary"]
+            required: ["companyName", "roleTitle", "status", "tier", "priority", "notesSummary"]
           }
         }
       });

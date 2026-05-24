@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Code, RefreshCw, CheckCircle2 } from "lucide-react";
-import { Opportunity, OpportunityStatus, Priority } from "../types";
+import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../types";
 import { SANDBOX_TEMPLATES, STATUS_OPTIONS, PRIORITY_OPTIONS } from "../constants";
 
 interface SignalSandboxProps {
@@ -28,6 +28,7 @@ export default function SignalSandbox({
   const [sandboxExtractedNextActionDate, setSandboxExtractedNextActionDate] = useState("No planned action");
   const [sandboxExtractedSalary, setSandboxExtractedSalary] = useState("");
   const [sandboxExtractedNotes, setSandboxExtractedNotes] = useState("");
+  const [sandboxExtractedTier, setSandboxExtractedTier] = useState<OpportunityTier>("T2");
   const [isSandboxParsed, setIsSandboxParsed] = useState(false);
   const [isParsingSandbox, setIsParsingSandbox] = useState(false);
   const [sandboxParserError, setSandboxParserError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export default function SignalSandbox({
     company?: string;
     role?: string;
     status?: string;
+    tier?: string;
     salary?: string;
   }>({});
 
@@ -69,6 +71,7 @@ export default function SignalSandbox({
       setSandboxExtractedCompany(data.companyName || "Unknown Target");
       setSandboxExtractedRole(data.roleTitle || "Unspecified Role");
       setSandboxExtractedStatus(data.status || "NEW");
+      setSandboxExtractedTier((data.tier as OpportunityTier) || "T2");
       setSandboxExtractedPriority(data.priority || "P1");
       setSandboxExtractedNextActionDate(data.nextActionDate || "No planned action");
       setSandboxExtractedSalary(data.salary || "");
@@ -98,7 +101,7 @@ export default function SignalSandbox({
 
       // 2. Keyword heuristic list as backup
       if (companyFallback === "Unknown Target") {
-        const companyKeywords = ["stripe", "spacex", "anthropic", "google", "meta", "netflix", "airbnb", "uber", "figma", "notion", "amazon", "microsoft", "apple", "vessel", "linear", "vercel"];
+        const companyKeywords = ["stripe", "spacex", "anthropic", "google", "meta", "netflix", "airbnb", "uber", "figma", "notion", "amazon", "microsoft", "apple", "vessel", "linear", "vercel", "seculife", "speedtalk", "adorama", "vaxph"];
         for (const kw of companyKeywords) {
           if (txt.includes(kw)) {
             companyFallback = kw.charAt(0).toUpperCase() + kw.slice(1);
@@ -107,21 +110,25 @@ export default function SignalSandbox({
         }
       }
 
-      // Dynamic Role Extraction
-      let roleFallback = "Strategic Scaling Partner";
-      const engineerRegex = /(software engineer|developer|frontend|backend|fullstack|engineering|technical)/i;
-      const operationsRegex = /(operations|operator|consigliere|revenue|process|efficiency)/i;
-      const managerRegex = /(manager|lead|director|product manager|pm|scrum)/i;
-      const strategyRegex = /(strategy|consultant|logistic|partner|analyst)/i;
+      // Dynamic Role & Tier Extraction from John Wesley's 3-Tier Operational Framework
+      let roleFallback = "Amazon Operations Specialist";
+      const vaWords = /(virtual assistant|va\b|clerical|data entry|basic tasks|listing entry|product research)/i;
+      const specialistWords = /(specialist|catalog|ppc|inventory|coordinator|ops specialist|listing health)/i;
+      const architectWords = /(architect|manager|lead\b|consultant|director|recovery|sop creation|operations lead)/i;
 
-      if (engineerRegex.test(sandboxEmailText)) {
-        roleFallback = "Automation Engineer Partner";
-      } else if (operationsRegex.test(sandboxEmailText)) {
-        roleFallback = "Revenue Operations Coach";
-      } else if (managerRegex.test(sandboxEmailText)) {
-        roleFallback = "Operational Lead / Pod PM";
-      } else if (strategyRegex.test(sandboxEmailText)) {
-        roleFallback = "Strategic Solutions Consigliere";
+      if (vaWords.test(sandboxEmailText)) {
+        roleFallback = "Junior Amazon VA & Data Entry Specialist";
+      } else if (architectWords.test(sandboxEmailText)) {
+        roleFallback = "E-commerce Operations Consultant & Lead";
+      } else if (specialistWords.test(sandboxEmailText)) {
+        roleFallback = "Amazon Catalog & Ops Specialist";
+      }
+
+      let tierFallback: OpportunityTier = "T2";
+      if (vaWords.test(sandboxEmailText)) {
+        tierFallback = "T1";
+      } else if (architectWords.test(sandboxEmailText)) {
+        tierFallback = "T3";
       }
 
       // Dynamic Status Parsing
@@ -150,12 +157,14 @@ export default function SignalSandbox({
         company: companyFallback,
         role: roleFallback,
         status: statusFallback,
+        tier: tierFallback,
         salary: salaryFallback || undefined
       });
 
       setSandboxExtractedCompany(companyFallback);
       setSandboxExtractedRole(roleFallback);
       setSandboxExtractedStatus(statusFallback);
+      setSandboxExtractedTier(tierFallback);
       setSandboxExtractedPriority("P1");
       
       // Compute automatic action limit dates (e.g. +3 days if interview, +10 days if rejected, etc)
@@ -185,7 +194,7 @@ export default function SignalSandbox({
       companyName: sandboxExtractedCompany,
       roleTitle: sandboxExtractedRole,
       source: "Gmail",
-      tier: "T2",
+      tier: sandboxExtractedTier,
       category: "Outbound Pilot",
       status: sandboxExtractedStatus,
       priority: sandboxExtractedPriority,
@@ -395,6 +404,12 @@ export default function SignalSandbox({
                     <span className="break-all">{sandboxHeuristicMatches.status}</span>
                   </div>
                 )}
+                {sandboxHeuristicMatches.tier && (
+                  <div className="flex items-start gap-1">
+                    <span className="opacity-60 shrink-0 font-bold">🚦 Tier:</span>
+                    <span className="break-all">{sandboxHeuristicMatches.tier}</span>
+                  </div>
+                )}
                 {sandboxHeuristicMatches.salary && (
                   <div className="flex items-start gap-1">
                     <span className="opacity-60 shrink-0 font-bold">💰 Salary:</span>
@@ -441,6 +456,26 @@ export default function SignalSandbox({
                     {opt.label}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Detected Tier Level */}
+            <div>
+              <label className={`text-[10px] font-mono uppercase tracking-wider ${theme.textSecondary} block mb-1`}>Detected Tier Level</label>
+              <select
+                value={sandboxExtractedTier}
+                onChange={(e) => setSandboxExtractedTier(e.target.value as OpportunityTier)}
+                className={`w-full text-xs font-mono p-1.5 bg-inherit rounded border ${theme.bgInput}`}
+              >
+                <option value="T1" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                  🟢 T1 — Execution / VA Level
+                </option>
+                <option value="T2" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                  🟡 T2 — Operations / Specialist Level (Default)
+                </option>
+                <option value="T3" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                  🔴 T3 — Systems / Architect Level
+                </option>
               </select>
             </div>
 

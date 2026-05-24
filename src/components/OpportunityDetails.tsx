@@ -183,9 +183,9 @@ export default function OpportunityDetails({
               onChange={(e) => onUpdateTier(selectedOpp, e.target.value as OpportunityTier)}
               className={`w-full border rounded p-2 focus:outline-none cursor-pointer ${theme.bgInput}`}
             >
-              <option value="T1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T1</option>
-              <option value="T2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T2</option>
-              <option value="T3" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T3</option>
+              <option value="T1" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>🟢 T1 — Execution / VA</option>
+              <option value="T2" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>🟡 T2 — Operations / Specialist</option>
+              <option value="T3" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>🔴 T3 — Systems / Architect</option>
             </select>
           </div>
         </div>

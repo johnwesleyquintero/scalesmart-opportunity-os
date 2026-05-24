@@ -158,13 +158,17 @@ export default function OpportunityModal({
                   <select
                     value={formTier}
                     onChange={(e) => setFormTier(e.target.value as OpportunityTier)}
-                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono ${theme.bgInput}`}
+                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-sans ${theme.bgInput}`}
                   >
-                    {TIER_OPTIONS.map((tier) => (
-                      <option key={tier} value={tier} className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
-                        {tier}
-                      </option>
-                    ))}
+                    <option value="T1" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                      🟢 T1 — Execution / VA Level
+                    </option>
+                    <option value="T2" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                      🟡 T2 — Operations / Specialist Level (Default)
+                    </option>
+                    <option value="T3" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                      🔴 T3 — Systems / Architect Level
+                    </option>
                   </select>
                 </div>
 

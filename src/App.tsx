@@ -1076,13 +1076,22 @@ export default function App() {
                             <td className="py-2 px-3 font-mono text-[11px]">{item.source}</td>
                             
                             <td className="py-2 px-3 font-mono text-center font-bold">
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                                item.tier === "T1" 
-                                  ? "text-rose-400 bg-rose-500/10 border border-rose-500/20" 
-                                  : item.tier === "T2" 
-                                  ? "text-blue-400 bg-blue-500/10 border border-blue-500/10"
-                                  : "text-slate-400 bg-slate-500/10 border border-slate-700"
-                              }`}>
+                              <span 
+                                title={
+                                  item.tier === "T1" 
+                                    ? "Tier 1 — Execution / VA Level (Simple operations, Shopify/Amazon tasks, SOP-following)" 
+                                    : item.tier === "T2" 
+                                    ? "Tier 2 — Operations / Specialist Level (Amazon ops, PPC, inventory, catalog)" 
+                                    : "Tier 3 — Systems / Architect Level (SOP creation, recovery, flat files, agency lead)"
+                                }
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
+                                  item.tier === "T1" 
+                                    ? "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25" 
+                                    : item.tier === "T2" 
+                                    ? "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/25"
+                                    : "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25"
+                                }`}
+                              >
                                 {item.tier}
                               </span>
                             </td>
