@@ -111,6 +111,87 @@ export default function App() {
   // Keyboard shortcut help overlay state
   const [isShortcutModalOpen, setIsShortcutModalOpen] = useState<boolean>(false);
 
+  // Multi-select bulk operational selection state
+  const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedRowIds([]);
+  }, [filter, activeTab]);
+
+  const handleBulkStatus = (nextStatus: OpportunityStatus) => {
+    const updatedList = opportunities.map((o) => {
+      if (selectedRowIds.includes(o.id)) {
+        return { ...o, status: nextStatus, lastActivityDate: "2026-05-24" };
+      }
+      return o;
+    });
+    setOpportunities(updatedList);
+    setSelectedRowIds([]);
+    setToast({ message: `Successfully updated status to ${nextStatus} for ${selectedRowIds.length} lead(s).`, type: "success" });
+    if (appsScriptUrl.trim()) {
+      pushLedgerToSheets(updatedList, true).catch(() => {});
+    }
+  };
+
+  const handleBulkTier = (nextTier: OpportunityTier) => {
+    const updatedList = opportunities.map((o) => {
+      if (selectedRowIds.includes(o.id)) {
+        return { ...o, tier: nextTier, lastActivityDate: "2026-05-24" };
+      }
+      return o;
+    });
+    setOpportunities(updatedList);
+    setSelectedRowIds([]);
+    setToast({ message: `Successfully shifted tier to ${nextTier} for ${selectedRowIds.length} lead(s).`, type: "success" });
+    if (appsScriptUrl.trim()) {
+      pushLedgerToSheets(updatedList, true).catch(() => {});
+    }
+  };
+
+  const handleBulkPriority = (nextPriority: Priority) => {
+    const updatedList = opportunities.map((o) => {
+      if (selectedRowIds.includes(o.id)) {
+        return { ...o, priority: nextPriority, lastActivityDate: "2026-05-24" };
+      }
+      return o;
+    });
+    setOpportunities(updatedList);
+    setSelectedRowIds([]);
+    setToast({ message: `Successfully changed priority to ${nextPriority} for ${selectedRowIds.length} lead(s).`, type: "success" });
+    if (appsScriptUrl.trim()) {
+      pushLedgerToSheets(updatedList, true).catch(() => {});
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (!confirm(`Are you sure you want to permanently delete all ${selectedRowIds.length} selected leads from cockpit? This cannot be undone.`)) {
+      return;
+    }
+    const remaining = opportunities.filter((o) => !selectedRowIds.includes(o.id));
+    setOpportunities(remaining);
+    setSelectedRowIds([]);
+    setToast({ message: `Successfully deleted ${selectedRowIds.length} selected lead(s).`, type: "success" });
+
+    if (selectedId && selectedRowIds.includes(selectedId)) {
+      setSelectedId(remaining[0]?.id || null);
+    }
+    if (focusedId && selectedRowIds.includes(focusedId)) {
+      setFocusedId(remaining[0]?.id || null);
+    }
+
+    if (appsScriptUrl.trim()) {
+      pushLedgerToSheets(remaining, true).catch(() => {});
+    }
+  };
+
+  const updateOpportunity = (opp: Opportunity) => {
+    const updatedList = opportunities.map((o) => (o.id === opp.id ? opp : o));
+    setOpportunities(updatedList);
+    if (appsScriptUrl.trim()) {
+      pushLedgerToSheets(updatedList, true).catch(() => {});
+    }
+  };
+
   // Sort state
   const [sortField, setSortField] = useState<keyof Opportunity | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -1010,9 +1091,23 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <table className={`w-full text-left text-xs border-collapse relative font-sans ${isDark ? "border-slate-850" : "border-[#eae9e6]"}`} id="opportunity-table">
+                  <table className={`w-full text-left text-xs border-collapse relative font-sans ${isDark ? "border-slate-855" : "border-[#eae9e6]"}`} id="opportunity-table">
                     <thead>
                       <tr className={`border-b select-none font-mono ${theme.thead}`}>
+                        <th className="py-2.5 px-3 w-8 text-center select-none">
+                          <input 
+                            type="checkbox" 
+                            className="cursor-pointer font-sans"
+                            checked={sorted.length > 0 && selectedRowIds.length === sorted.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRowIds(sorted.map(x => x.id));
+                              } else {
+                                setSelectedRowIds([]);
+                              }
+                            }}
+                          />
+                        </th>
                         <th className="py-2.5 px-3 w-6 text-center">Reorder</th>
                         <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("companyName")}>
                           🏢 Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}
@@ -1080,6 +1175,21 @@ export default function App() {
                                 : `${theme.hoverRow} ${isDark ? "bg-[#1d1d1d]" : "bg-white"}`
                             } ${isFocused ? "ring-2 ring-blue-500 ring-inset" : ""} ${draggingId ? "cursor-grabbing" : ""}`}
                           >
+                            <td className="py-2 px-2 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                              <input 
+                                type="checkbox" 
+                                className="cursor-pointer"
+                                checked={selectedRowIds.includes(item.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRowIds(prev => [...prev, item.id]);
+                                  } else {
+                                    setSelectedRowIds(prev => prev.filter(id => id !== item.id));
+                                  }
+                                }}
+                              />
+                            </td>
+
                             <td className="py-1.5 px-2 text-center align-middle">
                               <div className="flex items-center justify-center cursor-row-resize opacity-40 group-hover:opacity-100 transition">
                                 <GripVertical className="w-3.5 h-3.5" />
@@ -1199,6 +1309,91 @@ export default function App() {
                     </tbody>
                   </table>
                 )}
+
+                {/* Floating Bulk Operations Console Box */}
+                {selectedRowIds.length > 0 && (
+                  <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-2xl w-full px-4">
+                    <div className={`p-3 rounded-lg border shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs ${
+                      isDark 
+                        ? "bg-[#1f1f1f] border-slate-800 text-[#f1f1ef] shadow-black/80" 
+                        : "bg-white border-neutral-200 text-[#37352f] shadow-neutral-350/50"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-2 w-2 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                        <span className="font-mono font-bold leading-none">{selectedRowIds.length} lead(s) selected</span>
+                      </div>
+
+                      <div className="flex items-center flex-wrap gap-2">
+                        <select
+                          onChange={(e) => {
+                            const nextStatus = e.target.value as OpportunityStatus;
+                            if (!nextStatus) return;
+                            handleBulkStatus(nextStatus);
+                            e.target.value = "";
+                          }}
+                          className={`px-2 py-1 rounded border text-[10.5px] font-mono cursor-pointer focus:outline-none ${theme.bgInput}`}
+                        >
+                          <option value="">Move Status...</option>
+                          <option value="NEW">NEW</option>
+                          <option value="APPLIED">APPLIED</option>
+                          <option value="ASSESSMENT_PENDING">ASSESSMENT</option>
+                          <option value="INTERVIEWING">INTERVIEWING</option>
+                          <option value="OFFER">OFFER</option>
+                          <option value="REJECTED">REJECTED</option>
+                          <option value="DORMANT">DORMANT</option>
+                          <option value="ARCHIVED">ARCHIVED</option>
+                        </select>
+
+                        <select
+                          onChange={(e) => {
+                            const nextTier = e.target.value as OpportunityTier;
+                            if (!nextTier) return;
+                            handleBulkTier(nextTier);
+                            e.target.value = "";
+                          }}
+                          className={`px-2 py-1 rounded border text-[10.5px] font-mono cursor-pointer focus:outline-none ${theme.bgInput}`}
+                        >
+                          <option value="">Shift Tier...</option>
+                          <option value="T1">T1 (Execution)</option>
+                          <option value="T2">T2 (Specialist)</option>
+                          <option value="T3">T3 (Systems)</option>
+                        </select>
+
+                        <select
+                          onChange={(e) => {
+                            const nextPriority = e.target.value as Priority;
+                            if (!nextPriority) return;
+                            handleBulkPriority(nextPriority);
+                            e.target.value = "";
+                          }}
+                          className={`px-2 py-1 rounded border text-[10.5px] font-mono cursor-pointer focus:outline-none ${theme.bgInput}`}
+                        >
+                          <option value="">Set Priority...</option>
+                          <option value="P0">P0 (Critical)</option>
+                          <option value="P1">P1 (Medium)</option>
+                          <option value="P2">P2 (Low)</option>
+                        </select>
+
+                        <button
+                          onClick={handleBulkDelete}
+                          className="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10.5px] font-bold font-sans transition flex items-center gap-1 cursor-pointer"
+                        >
+                          Delete Selected
+                        </button>
+
+                        <button
+                          onClick={() => setSelectedRowIds([])}
+                          className="px-1.5 py-1 hover:underline text-[10.5px] font-mono opacity-70 hover:opacity-100 transition whitespace-nowrap cursor-pointer"
+                        >
+                          Deselect
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </main>
 
               {/* Right Column: Dynamic Inspector Detail Panel */}
@@ -1213,6 +1408,7 @@ export default function App() {
                     onUpdateStatus={updateStatus}
                     onUpdatePriority={updatePriority}
                     onUpdateTier={updateTier}
+                    onUpdateOpportunity={updateOpportunity}
                   />
                 </aside>
               )}

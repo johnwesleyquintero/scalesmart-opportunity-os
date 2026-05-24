@@ -38,4 +38,9 @@ export interface Opportunity {
   riskFlag?: "none" | "deadline_missed" | "no_response" | "unclear";
   score?: number;
   notes?: string;
+  logs?: Array<{ id: string; date: string; text: string }>;
+  sopScore?: number;
+  automationScore?: number;
+  compensationScore?: number;
+  urgencyScore?: number;
 }
