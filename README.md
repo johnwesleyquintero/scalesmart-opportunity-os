@@ -27,6 +27,24 @@ Includes a dedicated, persistent theme toggle with a customizable palette replic
 * **Dark Mode**: Replicates the clean obsidian tones (`#191919`, `#202020`) with soft slate typography.
 * **Dual Persistence**: Theme preference is automatically sync'd and persisted via standard client-side `localStorage`.
 
+### 🔑 Gemini API Key Browser Overrides
+Allows operators to input their own Gemini API free-tier key directly from their browser:
+* **Zero Config Setup**: Paste a custom key in the override input box.
+* **Avoid Rate-Limits**: Switch keys in local browser memory instantly during high-frequency sweep parsing.
+* **Graceful Fallback**: Bypasses system endpoints and falls back safely to the primary environment `GEMINI_API_KEY` whenever the input field is empty.
+* **Secured Transmission**: Transmitted securely via TLS-protected header parameters to our server endpoints without permanent backend logging.
+
+### ↕️ Manual Drag-and-Drop Priority Reordering
+Enables founders to prioritize leads organically based on touch-points, intuition, or outbound rhythm:
+* **Intuitive Reordering**: Click and drag the grid icon handle in any row to custom-place it within your pipeline.
+* **Smart Sorting Override**: Drag actions temporarily release formal column sort locks to maintain your custom sequence immediately.
+* **Automated Synchronicity**: Automatically synchronizes your customized order back to the Google Sheets spreadsheet DB via Apps Script (`sync_all`) and keeps state preserved in local client storage.
+
+### 📊 Optimized High-Density Display
+Engineered for rapid outbound tracking and low-friction visual inspections:
+* **Low Padding Cells**: Compressed margins and padding height (`py-1` and clean alignments) to display a larger volume of opportunities at a single glance.
+* **Unified Workspace Header**: A polished navigation ribbon featuring a real-time system activity pulse, combined inline search fields with search-prep icons, and intuitive viewport drawers toggle buttons.
+
 ### 📈 Interactive Column Sorting
 The central cockpit table offers immediate high-performance sorting. Click any header indicator:
 * **Company Name** (Alphabetical order)
