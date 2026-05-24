@@ -1,6 +1,7 @@
 import React from "react";
 import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../types";
 import { Pencil, PanelRightClose, AlertTriangle, ExternalLink, FileText } from "lucide-react";
+import { getRiskOfOpportunity } from "../utils";
 
 interface OpportunityDetailsProps {
   selectedOpp: Opportunity | null;
@@ -13,21 +14,6 @@ interface OpportunityDetailsProps {
   onUpdateTier: (opp: Opportunity, tier: OpportunityTier) => void;
 }
 
-const getRiskOfOpportunity = (opp: Opportunity): { type: "deadline_missed" | "no_response" | "none", message: string } => {
-  if (["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(opp.status)) {
-    return { type: "none", message: "" };
-  }
-  
-  if (opp.nextActionDate && opp.nextActionDate < "2026-05-24") {
-    return { type: "deadline_missed", message: `Action deadline missed (${opp.nextActionDate})` };
-  }
-
-  if (opp.status === "APPLIED" && opp.dateApplied && opp.dateApplied < "2026-05-14") {
-    return { type: "no_response", message: "Inbox quiet for over 10 days" };
-  }
-
-  return { type: "none", message: "" };
-};
 
 export default function OpportunityDetails({
   selectedOpp,

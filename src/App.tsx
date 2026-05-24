@@ -22,22 +22,7 @@ import OpportunityModal from "./components/OpportunityModal";
 import OpportunityDetails from "./components/OpportunityDetails";
 import AppsScriptConnector from "./components/AppsScriptConnector";
 import SignalSandbox from "./components/SignalSandbox";
-
-const getRiskOfOpportunity = (opp: Opportunity): { type: "deadline_missed" | "no_response" | "none", message: string } => {
-  if (["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(opp.status)) {
-    return { type: "none", message: "" };
-  }
-  
-  if (opp.nextActionDate && opp.nextActionDate < "2026-05-24") {
-    return { type: "deadline_missed", message: `Action deadline missed (${opp.nextActionDate})` };
-  }
-
-  if (opp.status === "APPLIED" && opp.dateApplied && opp.dateApplied < "2026-05-14") {
-    return { type: "no_response", message: "Inbox quiet for over 10 days" };
-  }
-
-  return { type: "none", message: "" };
-};
+import { getRiskOfOpportunity } from "./utils";
 
 type FilterType = "ALL" | "ACTIVE" | "INTERVIEWING" | "ACTION_REQUIRED" | "DORMANT";
 
@@ -137,6 +122,7 @@ export default function App() {
   };
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const handleDragAndDropReorder = (draggedId: string, overId: string) => {
     if (draggedId === overId) return;
@@ -550,9 +536,53 @@ export default function App() {
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.tagName === "SELECT" ||
-        target.isContentEditable
+        target.isContentEditable ||
+        modalMode !== null
       ) {
         return;
+      }
+
+      // Pro Operator instant tab switching
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (e.key === "c" || e.key === "C") {
+          setActiveTab("cockpit");
+          setToast({ message: "Switched to Spreadsheet List Cockpit [C]", type: "info" });
+          return;
+        }
+        if (e.key === "r" || e.key === "R") {
+          setActiveTab("radar");
+          setToast({ message: "Switched to Signal Radar Queue [R]", type: "info" });
+          return;
+        }
+      }
+
+      // Number keys 1-5 to switch between partitions in Cockpit
+      if (activeTab === "cockpit" && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (e.key === "1") {
+          setFilter("ALL");
+          setToast({ message: "Partition filter: ALL TARGETS [1]", type: "info" });
+          return;
+        }
+        if (e.key === "2") {
+          setFilter("ACTIVE");
+          setToast({ message: "Partition filter: ACTIVE PIPELINE [2]", type: "info" });
+          return;
+        }
+        if (e.key === "3") {
+          setFilter("INTERVIEWING");
+          setToast({ message: "Partition filter: ACTIVE LOOPS [3]", type: "info" });
+          return;
+        }
+        if (e.key === "4") {
+          setFilter("ACTION_REQUIRED");
+          setToast({ message: "Partition filter: ALERTS PENDING [4]", type: "info" });
+          return;
+        }
+        if (e.key === "5") {
+          setFilter("DORMANT");
+          setToast({ message: "Partition filter: ARCHIVES [5]", type: "info" });
+          return;
+        }
       }
 
       if (e.ctrlKey && e.key === "\\") {
@@ -610,7 +640,7 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen]);
+  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
@@ -823,6 +853,126 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Stacked visual status indicator profile */}
+                {opportunities.length > 0 && (() => {
+                  const totalOppsCount = opportunities.length || 1;
+                  const countByStatus = (status: OpportunityStatus) => opportunities.filter(o => o.status === status).length;
+                  
+                  const pctNew = (countByStatus("NEW") / totalOppsCount) * 100;
+                  const pctApplied = (countByStatus("APPLIED") / totalOppsCount) * 100;
+                  const pctAssessment = (countByStatus("ASSESSMENT_PENDING") / totalOppsCount) * 100;
+                  const pctInterview = (countByStatus("INTERVIEWING") / totalOppsCount) * 100;
+                  const pctOffer = (countByStatus("OFFER") / totalOppsCount) * 100;
+                  const pctRejected = (countByStatus("REJECTED") / totalOppsCount) * 100;
+                  const pctDormant = ((countByStatus("DORMANT") + countByStatus("ARCHIVED")) / totalOppsCount) * 100;
+
+                  return (
+                    <div className={`mb-6 p-4 rounded-lg border ${theme.bgCard} flex flex-col gap-2.5`}>
+                      <div className="flex justify-between items-center text-[10px] font-mono leading-none">
+                        <span className={`font-bold ${isDark ? "text-slate-300" : "text-[#37352f]"}`}>PIPELINE DISTRIBUTION PROFILE</span>
+                        <span className={`text-[9px] ${theme.textSecondary}`}>Hover blocks for active headcounts</span>
+                      </div>
+                      <div className="h-2 rounded-full overflow-hidden w-full flex bg-slate-800/10 dark:bg-slate-800">
+                        {pctNew > 0 && (
+                          <div 
+                            style={{ width: `${pctNew}%` }} 
+                            className="bg-slate-400 dark:bg-slate-500 transition-all cursor-help"
+                            title={`NEW: ${countByStatus("NEW")} record(s) (${Math.round(pctNew)}%)`}
+                          />
+                        )}
+                        {pctApplied > 0 && (
+                          <div 
+                            style={{ width: `${pctApplied}%` }} 
+                            className="bg-indigo-500 transition-all cursor-help"
+                            title={`APPLIED: ${countByStatus("APPLIED")} record(s) (${Math.round(pctApplied)}%)`}
+                          />
+                        )}
+                        {pctAssessment > 0 && (
+                          <div 
+                            style={{ width: `${pctAssessment}%` }} 
+                            className="bg-amber-500 transition-all cursor-help"
+                            title={`ASSESSMENT: ${countByStatus("ASSESSMENT_PENDING")} record(s) (${Math.round(pctAssessment)}%)`}
+                          />
+                        )}
+                        {pctInterview > 0 && (
+                          <div 
+                            style={{ width: `${pctInterview}%` }} 
+                            className="bg-sky-500 transition-all cursor-help"
+                            title={`INTERVIEWING: ${countByStatus("INTERVIEWING")} record(s) (${Math.round(pctInterview)}%)`}
+                          />
+                        )}
+                        {pctOffer > 0 && (
+                          <div 
+                            style={{ width: `${pctOffer}%` }} 
+                            className="bg-emerald-500 transition-all cursor-help"
+                            title={`OFFER: ${countByStatus("OFFER")} record(s) (${Math.round(pctOffer)}%)`}
+                          />
+                        )}
+                        {pctRejected > 0 && (
+                          <div 
+                            style={{ width: `${pctRejected}%` }} 
+                            className="bg-rose-500 transition-all cursor-help"
+                            title={`REJECTED: ${countByStatus("REJECTED")} record(s) (${Math.round(pctRejected)}%)`}
+                          />
+                        )}
+                        {pctDormant > 0 && (
+                          <div 
+                            style={{ width: `${pctDormant}%` }} 
+                            className="bg-zinc-450 dark:bg-zinc-600 transition-all cursor-help"
+                            title={`ARCHIVES: ${countByStatus("DORMANT") + countByStatus("ARCHIVED")} record(s) (${Math.round(pctDormant)}%)`}
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Grid Legends */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] font-mono opacity-80 mt-0.5">
+                        {countByStatus("NEW") > 0 && (
+                          <div className="flex items-center gap-1" title="New records to evaluate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 inline-block" />
+                            <span>NEW ({countByStatus("NEW")})</span>
+                          </div>
+                        )}
+                        {countByStatus("APPLIED") > 0 && (
+                          <div className="flex items-center gap-1" title="Outreach applied leads">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-505 inline-block" />
+                            <span>APPLIED ({countByStatus("APPLIED")})</span>
+                          </div>
+                        )}
+                        {countByStatus("ASSESSMENT_PENDING") > 0 && (
+                          <div className="flex items-center gap-1" title="Tests or takehome exercises pending">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                            <span>ASSESSMENT ({countByStatus("ASSESSMENT_PENDING")})</span>
+                          </div>
+                        )}
+                        {countByStatus("INTERVIEWING") > 0 && (
+                          <div className="flex items-center gap-1" title="Currently speaking with company loops">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-505 inline-block" />
+                            <span>INTERVIEWING ({countByStatus("INTERVIEWING")})</span>
+                          </div>
+                        )}
+                        {countByStatus("OFFER") > 0 && (
+                          <div className="flex items-center gap-1" title="Successful Job / Project bids offered!">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                            <span className="font-bold text-emerald-500">OFFER ({countByStatus("OFFER")})</span>
+                          </div>
+                        )}
+                        {countByStatus("REJECTED") > 0 && (
+                          <div className="flex items-center gap-1" title="Unmatched applications">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
+                            <span>REJECTED ({countByStatus("REJECTED")})</span>
+                          </div>
+                        )}
+                        {countByStatus("DORMANT") + countByStatus("ARCHIVED") > 0 && (
+                          <div className="flex items-center gap-1" title="Archived, dormant, or paused leads">
+                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 inline-block" />
+                            <span>ARCHIVES ({countByStatus("DORMANT") + countByStatus("ARCHIVED")})</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Main Spreadsheet grid of Targets list */}
                 {sorted.length === 0 ? (
                   <div className={`p-16 border border-dashed rounded-lg text-center ${isDark ? "border-slate-800 bg-[#1f1f1f]" : "border-[#eae9e6] bg-[#f7f7f5]"}`}>
@@ -870,24 +1020,38 @@ export default function App() {
                             id={`row-${item.id}`}
                             draggable
                             onDragStart={() => setDraggingId(item.id)}
+                            onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
                             onDragOver={(e) => {
                               e.preventDefault();
                               e.dataTransfer.dropEffect = "move";
+                              if (dragOverId !== item.id && draggingId !== item.id) {
+                                setDragOverId(item.id);
+                              }
+                            }}
+                            onDragLeave={() => {
+                              if (dragOverId === item.id) {
+                                setDragOverId(null);
+                              }
                             }}
                             onDrop={() => {
                               if (draggingId) {
                                 handleDragAndDropReorder(draggingId, item.id);
-                                setDraggingId(null);
                               }
+                              setDraggingId(null);
+                              setDragOverId(null);
                             }}
                             onClick={() => { setSelectedId(item.id); setFocusedId(item.id); }}
-                            className={`transition-colors duration-100 group opacity-90 hover:opacity-100 outline-none relative ${
-                              isSelected 
+                            className={`transition-all duration-100 group outline-none relative ${
+                              draggingId === item.id
+                                ? (isDark ? "opacity-30 bg-slate-800 border-y-2 border-dashed border-sky-500 scale-[0.99]" : "opacity-30 bg-slate-100 border-y-2 border-dashed border-sky-400 scale-[0.99]")
+                                : dragOverId === item.id
+                                ? (isDark ? "bg-sky-550/15 border-b-2 border-sky-500 scale-[1.002]" : "bg-sky-50 border-b-2 border-sky-400 scale-[1.002]")
+                                : isSelected 
                                 ? theme.selectedRow 
                                 : isFocused
                                 ? (isDark ? "bg-[#253959] text-white" : "bg-[#f1f5f9] text-[#1c1c1c]")
                                 : `${theme.hoverRow} ${isDark ? "bg-[#1d1d1d]" : "bg-white"}`
-                            } ${isFocused ? "ring-2 ring-blue-500 ring-inset" : ""}`}
+                            } ${isFocused ? "ring-2 ring-blue-500 ring-inset" : ""} ${draggingId ? "cursor-grabbing" : ""}`}
                           >
                             <td className="py-1.5 px-2 text-center align-middle">
                               <div className="flex items-center justify-center cursor-row-resize opacity-40 group-hover:opacity-100 transition">
