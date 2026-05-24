@@ -103,6 +103,7 @@ export default function App() {
   const [filter, setFilter] = useState<FilterType>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>("1");
+  const [focusedId, setFocusedId] = useState<string | null>("1");
 
   // Collapsible Sidebars persistent states
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(() => {
@@ -201,24 +202,6 @@ export default function App() {
       setConnectionStatus("success");
     }
   }, [appsScriptUrl]);
-
-  // Handle keyboard shortcuts (Ctrl+\ and Ctrl+[) to toggle layout panels
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "\\") {
-        e.preventDefault();
-        setIsLeftSidebarOpen((prev) => !prev);
-      }
-      if (e.ctrlKey && (e.key === "[" || e.key === "]")) {
-        e.preventDefault();
-        setIsRightSidebarOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   const handleConnectAppsScript = async (urlToTest: string) => {
     if (!urlToTest.trim()) {
@@ -352,6 +335,7 @@ export default function App() {
       updatedList = [newOpp, ...updatedList];
       setOpportunities(updatedList);
       setSelectedId(newOpp.id);
+      setFocusedId(newOpp.id);
       setToast({ message: `Successfully added "${newOpp.companyName}" to local Ledger!`, type: "success" });
     } else if (modalMode === "EDIT" && oppToEdit) {
       const updated: Opportunity = {
@@ -388,8 +372,12 @@ export default function App() {
     if (confirm("Are you sure you want to remove this opportunity?")) {
       const remaining = opportunities.filter((o) => o.id !== id);
       setOpportunities(remaining);
+      const nextActiveId = remaining[0]?.id || null;
       if (selectedId === id) {
-        setSelectedId(remaining[0]?.id || null);
+        setSelectedId(nextActiveId);
+      }
+      if (focusedId === id) {
+        setFocusedId(nextActiveId);
       }
 
       // Auto-sync with Sheets
@@ -445,6 +433,7 @@ export default function App() {
     const updatedList = [customOpp, ...opportunities];
     setOpportunities(updatedList);
     setSelectedId(customOpp.id);
+    setFocusedId(customOpp.id);
 
     if (appsScriptUrl.trim()) {
       pushLedgerToSheets(updatedList, true)
@@ -478,6 +467,7 @@ export default function App() {
     const updatedList = [newOpp, ...opportunities];
     setOpportunities(updatedList);
     setSelectedId(newOpp.id);
+    setFocusedId(newOpp.id);
     
     // Remove from radar sim list
     setRadarSignals(radarSignals.filter((s) => s.id !== signal.id));
@@ -551,6 +541,76 @@ export default function App() {
     if (valA > valB) return sortDirection === "asc" ? 1 : -1;
     return 0;
   });
+
+  // Handle keyboard shortcuts (Ctrl+\ and Ctrl+[) and list arrow key / Enter navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.ctrlKey && e.key === "\\") {
+        e.preventDefault();
+        setIsLeftSidebarOpen((prev) => !prev);
+        return;
+      }
+      if (e.ctrlKey && (e.key === "[" || e.key === "]")) {
+        e.preventDefault();
+        setIsRightSidebarOpen((prev) => !prev);
+        return;
+      }
+
+      // Keyboard arrow keys and Enter navigation for sorted spreadsheet rows in Cockpit tab
+      if (activeTab === "cockpit" && sorted.length > 0) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          
+          let currentIndex = sorted.findIndex((o) => o.id === (focusedId || selectedId));
+          if (currentIndex === -1) {
+            currentIndex = 0;
+          }
+
+          let nextIndex = currentIndex;
+          if (e.key === "ArrowDown") {
+            nextIndex = Math.min(currentIndex + 1, sorted.length - 1);
+          } else if (e.key === "ArrowUp") {
+            nextIndex = Math.max(currentIndex - 1, 0);
+          }
+
+          const nextItemId = sorted[nextIndex].id;
+          setFocusedId(nextItemId);
+
+          // Smooth scrolling of designated row element to keep elements in viewport naturally
+          const rowElement = document.getElementById(`row-${nextItemId}`);
+          if (rowElement && typeof rowElement.scrollIntoView === "function") {
+            rowElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        }
+
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const targetId = focusedId || selectedId;
+          const targetItem = sorted.find((o) => o.id === targetId);
+          if (targetItem) {
+            setSelectedId(targetItem.id);
+            setFocusedId(targetItem.id);
+            setIsRightSidebarOpen(true); // Open Details Inspector
+            setToast({ message: `Opened "${targetItem.companyName}" details via keyboard selection`, type: "success" });
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
@@ -801,11 +861,13 @@ export default function App() {
                     <tbody className="divide-y divide-[#eae9e6]/10 dark:divide-slate-855">
                       {sorted.map((item) => {
                         const isSelected = item.id === selectedId;
+                        const isFocused = item.id === focusedId;
                         const risk = getRiskOfOpportunity(item);
 
                         return (
                           <tr
                             key={item.id}
+                            id={`row-${item.id}`}
                             draggable
                             onDragStart={() => setDraggingId(item.id)}
                             onDragOver={(e) => {
@@ -818,10 +880,14 @@ export default function App() {
                                 setDraggingId(null);
                               }
                             }}
-                            onClick={() => setSelectedId(item.id)}
-                            className={`transition-colors duration-100 group opacity-90 hover:opacity-100 ${
-                              isSelected ? theme.selectedRow : `${theme.hoverRow} ${isDark ? "bg-[#1d1d1d]" : "bg-white"}`
-                            }`}
+                            onClick={() => { setSelectedId(item.id); setFocusedId(item.id); }}
+                            className={`transition-colors duration-100 group opacity-90 hover:opacity-100 outline-none relative ${
+                              isSelected 
+                                ? theme.selectedRow 
+                                : isFocused
+                                ? (isDark ? "bg-[#253959] text-white" : "bg-[#f1f5f9] text-[#1c1c1c]")
+                                : `${theme.hoverRow} ${isDark ? "bg-[#1d1d1d]" : "bg-white"}`
+                            } ${isFocused ? "ring-2 ring-blue-500 ring-inset" : ""}`}
                           >
                             <td className="py-1.5 px-2 text-center align-middle">
                               <div className="flex items-center justify-center cursor-row-resize opacity-40 group-hover:opacity-100 transition">
