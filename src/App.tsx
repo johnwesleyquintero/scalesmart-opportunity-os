@@ -4,7 +4,8 @@ import {
   Plus, X, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
   Sun, Moon, GripVertical, Search, Pencil,
-  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle
+  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle,
+  Copy
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -579,6 +580,46 @@ export default function App() {
     setToast({ message: "Ledger spreadsheet exported as standard CSV. Ready for direct copy paste imports!", type: "success" });
   };
 
+  // Copy spreadsheet contents directly as a pristine formatted Markdown table
+  const handleCopyMarkdown = async () => {
+    const targets = selectedRowIds.length > 0
+      ? opportunities.filter(o => selectedRowIds.includes(o.id))
+      : sorted;
+
+    if (targets.length === 0) {
+      setToast({ message: "No targeting leads available to copy as Markdown.", type: "error" });
+      return;
+    }
+
+    let mdContent = "| 🏢 Company Name | 💼 Role Title | 🟢 Tier | 🎯 Priority | 📈 Status | 📊 WesBI Score | 🌐 Source | 📅 Applied | 🔗 Action Link |\n";
+    mdContent += "| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |\n";
+
+    targets.forEach((o) => {
+      const company = o.companyName || "—";
+      const role = o.roleTitle || "—";
+      const tier = o.tier || "—";
+      const status = o.status || "—";
+      const priority = o.priority || "—";
+      const score = o.score !== undefined ? `${o.score}/100` : "—";
+      const sourceName = o.source || "—";
+      const dateApplied = o.dateApplied || "—";
+      const linkStr = o.link ? `[Link](${o.link})` : "—";
+
+      mdContent += `| **${company}** | ${role} | ${tier} | ${priority} | ${status} | ${score} | ${sourceName} | ${dateApplied} | ${linkStr} |\n`;
+    });
+
+    try {
+      await navigator.clipboard.writeText(mdContent);
+      setToast({
+        message: `Successfully copied ${targets.length} lead(s) as a Markdown table to clipboard!`,
+        type: "success"
+      });
+    } catch (err: any) {
+      console.error("Markdown copy failed:", err);
+      setToast({ message: "Failed to write markdown table to clipboard.", type: "error" });
+    }
+  };
+
   // Compute stats totals
   const numAll = opportunities.length;
   const numActive = opportunities.filter((o) => !["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(o.status)).length;
@@ -945,6 +986,22 @@ export default function App() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleCopyMarkdown}
+                      className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${
+                        selectedRowIds.length > 0
+                          ? "bg-[#252525] text-cyan-450 border-cyan-400/30 dark:bg-slate-900/80 dark:text-cyan-400 dark:border-cyan-500/20"
+                          : theme.bgButtonSec
+                      }`}
+                      title={
+                        selectedRowIds.length > 0
+                          ? `Copy ${selectedRowIds.length} selected lead(s) as a Markdown table`
+                          : "Copy entire visible list as a Markdown table"
+                      }
+                    >
+                      <Copy className={`w-3.5 h-3.5 ${selectedRowIds.length > 0 ? "text-cyan-400 animate-pulse" : ""}`} />
+                      Copy MD {selectedRowIds.length > 0 && `(${selectedRowIds.length})`}
+                    </button>
                     <button
                       onClick={handleExportCSV}
                       className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${theme.bgButtonSec}`}
@@ -1376,6 +1433,14 @@ export default function App() {
                           <option value="P1">P1 (Medium)</option>
                           <option value="P2">P2 (Low)</option>
                         </select>
+
+                        <button
+                          onClick={handleCopyMarkdown}
+                          className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10.5px] font-bold font-sans transition flex items-center gap-1.5 cursor-pointer"
+                          title="Generate and copy a Markdown table of all selected leads"
+                        >
+                          <Copy className="w-3.5 h-3.5" /> Copy MD
+                        </button>
 
                         <button
                           onClick={handleBulkDelete}
