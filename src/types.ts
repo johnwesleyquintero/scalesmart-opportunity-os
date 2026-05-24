@@ -16,7 +16,7 @@ export interface Opportunity {
   id: string;
   companyName: string;
   roleTitle: string;
-  source: "LinkedIn" | "OLJ" | "Direct" | "Referral" | "Funnel";
+  source: "LinkedIn" | "OLJ" | "Direct" | "Referral" | "Funnel" | "Gmail";
   tier: OpportunityTier;
   category: string;
   status: OpportunityStatus;
