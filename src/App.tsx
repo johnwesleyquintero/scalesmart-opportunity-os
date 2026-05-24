@@ -4,7 +4,7 @@ import {
   Plus, X, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
   Sun, Moon, GripVertical, Search, Pencil,
-  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen
+  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -107,6 +107,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("scalesmart_right_sidebar_open", String(isRightSidebarOpen));
   }, [isRightSidebarOpen]);
+
+  // Keyboard shortcut help overlay state
+  const [isShortcutModalOpen, setIsShortcutModalOpen] = useState<boolean>(false);
 
   // Sort state
   const [sortField, setSortField] = useState<keyof Opportunity | null>(null);
@@ -542,6 +545,14 @@ export default function App() {
         return;
       }
 
+      if (isShortcutModalOpen) {
+        if (e.key === "Escape" || e.key === "?") {
+          e.preventDefault();
+          setIsShortcutModalOpen(false);
+        }
+        return;
+      }
+
       // Pro Operator instant tab switching
       if (!e.ctrlKey && !e.altKey && !e.metaKey) {
         if (e.key === "c" || e.key === "C") {
@@ -552,6 +563,11 @@ export default function App() {
         if (e.key === "r" || e.key === "R") {
           setActiveTab("radar");
           setToast({ message: "Switched to Signal Radar Queue [R]", type: "info" });
+          return;
+        }
+        if (e.key === "?") {
+          e.preventDefault();
+          setIsShortcutModalOpen(true);
           return;
         }
       }
@@ -640,7 +656,7 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode]);
+  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode, isShortcutModalOpen]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
@@ -670,6 +686,17 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setIsShortcutModalOpen(true)}
+            className={`p-1.5 rounded transition flex items-center gap-1 text-[10.5px] font-mono leading-none ${
+              isDark ? "hover:bg-[#2c2c2c] text-sky-400 hover:text-sky-300" : "hover:bg-[#eae9e6]/80 text-blue-600 hover:text-blue-700"
+            }`}
+            title="Keyboard Shortcut Guide (?)"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline opacity-80">[?] Shortcuts</span>
+          </button>
+
           <button
             onClick={() => setIsDark(!isDark)}
             className={`p-1.5 rounded transition ${isDark ? "hover:bg-slate-850 text-amber-450 hover:text-amber-400" : "hover:bg-[#eae9e6] text-neutral-600"}`}
@@ -1075,25 +1102,58 @@ export default function App() {
                             
                             <td className="py-2 px-3 font-mono text-[11px]">{item.source}</td>
                             
-                            <td className="py-2 px-3 font-mono text-center font-bold">
-                              <span 
-                                title={
-                                  item.tier === "T1" 
-                                    ? "Tier 1 — Execution / VA Level (Simple operations, Shopify/Amazon tasks, SOP-following)" 
-                                    : item.tier === "T2" 
-                                    ? "Tier 2 — Operations / Specialist Level (Amazon ops, PPC, inventory, catalog)" 
-                                    : "Tier 3 — Systems / Architect Level (SOP creation, recovery, flat files, agency lead)"
-                                }
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
-                                  item.tier === "T1" 
-                                    ? "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25" 
-                                    : item.tier === "T2" 
-                                    ? "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/25"
-                                    : "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25"
-                                }`}
-                              >
-                                {item.tier}
-                              </span>
+                            <td className="py-2 px-3 font-mono text-center font-bold relative">
+                              <div className="relative inline-block group/tier">
+                                <span 
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
+                                    item.tier === "T1" 
+                                      ? "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25" 
+                                      : item.tier === "T2" 
+                                      ? "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/25"
+                                      : "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25"
+                                  }`}
+                                >
+                                  {item.tier}
+                                </span>
+                                
+                                {/* Rich Hover Tooltip Box */}
+                                <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg shadow-xl border text-left transition-all duration-150 origin-bottom scale-95 opacity-0 pointer-events-none group-hover/tier:scale-100 group-hover/tier:opacity-100 group-hover/tier:pointer-events-auto z-40 ${
+                                  isDark 
+                                    ? "bg-[#181818] border-slate-800 text-slate-100" 
+                                    : "bg-white border-neutral-200 text-neutral-800"
+                                }`}>
+                                  <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-slate-500/10 dark:border-slate-800">
+                                    {item.tier === "T1" ? (
+                                      <>
+                                        <span className="text-emerald-500 font-bold font-mono text-[10px]">🟢 T1</span>
+                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Execution / VA Level</span>
+                                      </>
+                                    ) : item.tier === "T2" ? (
+                                      <>
+                                        <span className="text-amber-500 font-bold font-mono text-[10px]">🟡 T2</span>
+                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Operations / Specialist (Default)</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="text-rose-500 font-bold font-mono text-[10px]">🔴 T3</span>
+                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Systems / Architect</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  
+                                  <p className={`text-[10.5px] leading-relaxed font-sans font-medium ${isDark ? "text-slate-400" : "text-neutral-600"}`}>
+                                    {item.tier === "T1" && "Simple operations, data entry, distributor research, basic Amazon/Shopify catalog execution tasks, following strict SOPs."}
+                                    {item.tier === "T2" && "Amazon Operations, active catalog health audits, basic PPC, inventory coordination, Shopify/Amazon hybrid roles."}
+                                    {item.tier === "T3" && "Strategic agency leaders, backend Amazon recovery, flat-file variation engineering, customized App Script automation & SOP playbook design."}
+                                  </p>
+                                  
+                                  {/* Triangle Caret indicator */}
+                                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-t-4 border-t-neutral-200 dark:border-t-slate-800" />
+                                  <div className={`absolute top-[calc(100%-1px)] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-t-[3.5px] ${
+                                    isDark ? "border-t-[#181818]" : "border-t-white"
+                                  }`} />
+                                </div>
+                              </div>
                             </td>
 
                             <td className="py-2 px-3 align-middle">
@@ -1294,6 +1354,139 @@ export default function App() {
         isDark={isDark}
         theme={theme}
       />
+
+      {/* Keyboard Shortcuts Guide Overlay */}
+      <AnimatePresence>
+        {isShortcutModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+            onClick={() => setIsShortcutModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className={`w-full max-w-xl rounded-xl border p-6 shadow-2xl overflow-hidden relative ${
+                isDark ? "bg-[#202020] border-slate-800 text-slate-100" : "bg-white border-neutral-200 text-neutral-800"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setIsShortcutModalOpen(false)}
+                className={`absolute right-4 top-4 p-1 rounded-full transition ${
+                  isDark ? "hover:bg-slate-800 text-slate-400 hover:text-white" : "hover:bg-neutral-100 text-neutral-500 hover:text-neutral-900"
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-4">
+                <Keyboard className={`w-5 h-5 ${isDark ? "text-sky-400" : "text-blue-600"}`} />
+                <h3 className="text-xs font-black uppercase tracking-wider font-mono">
+                  Pro Operator Hotkey Console
+                </h3>
+              </div>
+
+              <p className={`text-xs ${theme.textSecondary} mb-6 leading-relaxed`}>
+                ScaleSmart Operations Suite supports quick typing driving workflows to allow rapid response, zero-mouse database triage, and quick view toggles. Use the shortcuts below directly from the interface:
+              </p>
+
+              <div className="space-y-6">
+                {/* Section 1 */}
+                <div className="space-y-2.5">
+                  <div className="text-[10px] font-mono font-bold text-sky-500 uppercase tracking-widest border-b pb-1 border-sky-500/10 dark:border-sky-500/20">
+                    📡 View Navigation & Structure
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Spreadsheet List Cockpit</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">C</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Signal Radar Queue</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">R</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Toggle Left Control Hub</span>
+                      <div className="flex gap-1 items-center">
+                        <kbd className="px-1 py-0.5 text-[9px] font-mono leading-none rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">Ctrl</kbd>
+                        <span className="opacity-40 text-[9px]">+</span>
+                        <kbd className="px-1 py-0.5 text-[9px] font-mono leading-none rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">\</kbd>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Toggle Details Sidebar</span>
+                      <div className="flex gap-1 items-center">
+                        <kbd className="px-1 py-0.5 text-[9px] font-mono leading-none rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">Ctrl</kbd>
+                        <span className="opacity-40 text-[9px]">+</span>
+                        <kbd className="px-1 py-0.5 text-[9px] font-mono leading-none rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">[ / ]</kbd>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2 */}
+                <div className="space-y-2.5">
+                  <div className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest border-b pb-1 border-amber-500/10 dark:border-amber-500/20">
+                    🚦 Cockpit Partition Filters
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Show All Targets</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">1</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Show Active Pipeline</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">2</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Show Active Loops</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">3</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Show Alerts Pending</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">4</kbd>
+                    </div>
+                    <div className="flex items-center justify-between sm:col-span-2">
+                      <span className={`${theme.textSecondary}`}>Show Dormant/Archives</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">5</kbd>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3 */}
+                <div className="space-y-2.5">
+                  <div className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest border-b pb-1 border-emerald-500/10 dark:border-emerald-500/20">
+                    📊 Spreadsheet Keyboard Driving (Cockpit)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Highlight previous / next row</span>
+                      <div className="flex gap-1 font-sans">
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">↑</kbd>
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">↓</kbd>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Inspect & open focused row</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">Enter</kbd>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-dashed border-slate-500/15 flex justify-between items-center text-[10px] font-mono opacity-60">
+                <span>Press <span className="font-bold">?</span> or <span className="font-bold">Esc</span> to close</span>
+                <span>SYSTEM VERSION 1.0</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 6. Floating Notification Toast System (Modular Overlay) */}
       <ToastNotification

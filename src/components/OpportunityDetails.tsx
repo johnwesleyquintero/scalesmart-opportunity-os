@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../types";
-import { Pencil, PanelRightClose, AlertTriangle, ExternalLink, FileText } from "lucide-react";
+import { Pencil, PanelRightClose, AlertTriangle, ExternalLink, FileText, Copy, Check } from "lucide-react";
 import { getRiskOfOpportunity } from "../utils";
 
 interface OpportunityDetailsProps {
@@ -25,6 +25,19 @@ export default function OpportunityDetails({
   onUpdatePriority,
   onUpdateTier
 }: OpportunityDetailsProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    if (!selectedOpp?.link) return;
+    try {
+      await navigator.clipboard.writeText(selectedOpp.link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
   if (!selectedOpp) {
     return (
       <div className={`h-full flex flex-col items-center justify-center ${theme.textSecondary} text-center py-12 relative`}>
@@ -204,14 +217,29 @@ export default function OpportunityDetails({
         {selectedOpp.link && (
           <div>
             <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Target Action Link / Email</label>
-            <a
-              href={selectedOpp.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`flex items-center justify-between text-blue-500 hover:underline hover:text-blue-650 p-2 rounded ${isDark ? "bg-[#252525]" : "bg-[#f1f1ef]"}`}
-            >
-              <span className="truncate font-mono mr-2">{selectedOpp.link}</span> <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-            </a>
+            <div className="flex gap-1.5 items-center">
+              <a
+                href={selectedOpp.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex-1 flex items-center justify-between text-blue-500 hover:underline hover:text-blue-650 p-2 rounded text-xs min-w-0 ${isDark ? "bg-[#252525]" : "bg-[#f1f1ef]"}`}
+              >
+                <span className="truncate font-mono mr-2">{selectedOpp.link}</span> <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+              </a>
+              <button
+                onClick={handleCopyLink}
+                title="Copy link to clipboard"
+                className={`p-2 rounded border transition-all flex items-center justify-center shrink-0 ${
+                  copied 
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 dark:text-emerald-400" 
+                    : isDark 
+                      ? "bg-[#252525] border-slate-800 text-slate-400 hover:text-slate-200" 
+                      : "bg-[#f1f1ef] border-[#eae9e6] text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100"
+                }`}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
         )}
 
