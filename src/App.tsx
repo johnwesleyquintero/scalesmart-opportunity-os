@@ -312,17 +312,18 @@ export default function App() {
     }
   };
 
-  const pushLedgerToSheets = async () => {
+  const pushLedgerToSheets = async (customOpps?: Opportunity[], quiet = false) => {
+    const listToSync = customOpps || opportunities;
     if (!appsScriptUrl.trim()) {
-      alert("Please configure and connect your Apps Script Deployment URL first.");
+      if (!quiet) alert("Please configure and connect your Apps Script Deployment URL first.");
       return;
     }
-    if (!confirm("Are you sure you want to push your local cockpit state to Google Sheets? This will update the rows in your target Sheet1 to match your current React UI state.")) {
+    if (!customOpps && !confirm("Are you sure you want to push your local cockpit state to Google Sheets? This will update the rows in your target Sheet1 to match your current React UI state.")) {
       return;
     }
     setIsConnecting(true);
     try {
-      const res = await fetch(appsScriptUrl.trim(), {
+      await fetch(appsScriptUrl.trim(), {
         method: "POST",
         mode: "no-cors", // bypass typical pre-flight redirect restrictions in Apps Script Web App
         headers: {
@@ -330,13 +331,18 @@ export default function App() {
         },
         body: JSON.stringify({
           action: "sync_all",
-          opportunities: opportunities
+          opportunities: listToSync
         })
       });
-      alert("Cockpit push complete! Your Google Sheets rows have been updated successfully.");
+      if (!quiet) {
+        alert("Cockpit push complete! Your Google Sheets rows have been updated successfully.");
+      }
     } catch (err: any) {
       console.error("Push state failed", err);
-      alert(`Push synchronization failed: ${err.toString()}`);
+      if (!quiet) {
+        alert(`Push synchronization failed: ${err.toString()}`);
+      }
+      throw err;
     } finally {
       setIsConnecting(false);
     }
@@ -1882,7 +1888,7 @@ function doPost(e) {
                         Verify fields above & confirm insertion directly into the core Opp ledger. It generates instantly.
                       </span>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           const salaryNote = sandboxExtractedSalary ? `[Salary: ${sandboxExtractedSalary}]` : "";
                           const customOpp: Opportunity = {
                             id: `opp-${Date.now()}`,
@@ -1898,10 +1904,22 @@ function doPost(e) {
                             lastActivityDate: new Date().toISOString().split("T")[0],
                             notes: (salaryNote ? `${salaryNote}\n` : "") + sandboxExtractedNotes
                           };
-                          setOpportunities([customOpp, ...opportunities]);
+                          const updatedList = [customOpp, ...opportunities];
+                          setOpportunities(updatedList);
                           setSelectedId(customOpp.id);
                           setSandboxEmailText("");
                           setIsSandboxParsed(false);
+
+                          if (appsScriptUrl.trim()) {
+                            try {
+                              await pushLedgerToSheets(updatedList, true);
+                              alert(`Successfully imported "${customOpp.companyName}" locally and synchronized it with your Google Sheet!`);
+                            } catch (err: any) {
+                              alert(`Successfully imported "${customOpp.companyName}" locally, but Google Sheet push failed: ${err.message || err}`);
+                            }
+                          } else {
+                            alert(`Successfully imported "${customOpp.companyName}" locally! Connect your Apps Script connector below to enable automatic Google Sheets syncing.`);
+                          }
                         }}
                         className={`w-full sm:w-auto text-xs px-4 py-2 font-mono font-bold rounded-md transition border ${
                           isDark 
