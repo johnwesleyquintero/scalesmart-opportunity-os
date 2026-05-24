@@ -1,0 +1,6 @@
+{
+  "name": "ScaleSmart Opportunity OS",
+  "description": "A lightweight founder pipeline cockpit and leverage flow decision engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

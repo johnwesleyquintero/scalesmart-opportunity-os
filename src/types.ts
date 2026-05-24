@@ -1,0 +1,31 @@
+export type OpportunityStatus =
+  | "NEW"
+  | "APPLIED"
+  | "ASSESSMENT_PENDING"
+  | "INTERVIEWING"
+  | "OFFER"
+  | "REJECTED"
+  | "DORMANT"
+  | "ARCHIVED";
+
+export type OpportunityTier = "T1" | "T2" | "T3";
+
+export type Priority = "P0" | "P1" | "P2";
+
+export interface Opportunity {
+  id: string;
+  companyName: string;
+  roleTitle: string;
+  source: "LinkedIn" | "OLJ" | "Direct" | "Referral" | "Funnel";
+  tier: OpportunityTier;
+  category: string;
+  status: OpportunityStatus;
+  priority: Priority;
+  link?: string;
+  dateApplied?: string;
+  lastActivityDate?: string;
+  nextActionDate?: string;
+  riskFlag?: "none" | "deadline_missed" | "no_response" | "unclear";
+  score?: number;
+  notes?: string;
+}
