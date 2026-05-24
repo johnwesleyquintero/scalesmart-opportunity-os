@@ -3,7 +3,8 @@ import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "./typ
 import {
   Plus, X, Pencil, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, Copy, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
-  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon
+  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon,
+  PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 
 const INITIAL_DATA: Opportunity[] = [
@@ -173,6 +174,24 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>("1");
 
+  // Collapsible Sidebars persistent states
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem("scalesmart_left_sidebar_open");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem("scalesmart_right_sidebar_open");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_left_sidebar_open", String(isLeftSidebarOpen));
+  }, [isLeftSidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_right_sidebar_open", String(isRightSidebarOpen));
+  }, [isRightSidebarOpen]);
+
   // Sort state
   const [sortField, setSortField] = useState<keyof Opportunity | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -210,6 +229,24 @@ export default function App() {
       setConnectionStatus("success");
     }
   }, [appsScriptUrl]);
+
+  // Handle keyboard shortcuts (Ctrl+\ and Ctrl+[) to toggle layout panels
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "\\") {
+        e.preventDefault();
+        setIsLeftSidebarOpen((prev) => !prev);
+      }
+      if (e.ctrlKey && (e.key === "[" || e.key === "]")) {
+        e.preventDefault();
+        setIsRightSidebarOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const handleConnectAppsScript = async (urlToTest: string) => {
     if (!urlToTest.trim()) {
@@ -1012,6 +1049,34 @@ function doPost(e) {
             >
               {isDark ? <Sun className="w-4 h-4 text-amber-450" /> : <Moon className="w-4 h-4 text-[#37352f]" />}
             </button>
+
+            {/* Sidebar Viewport Control Panel */}
+            {activeTab === "cockpit" && (
+              <div className={`flex items-center gap-1 border-l pl-2 ml-1 ${isDark ? "border-slate-800" : "border-[#eae9e6]"}`}>
+                <button
+                  onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${
+                    isLeftSidebarOpen 
+                      ? (isDark ? "bg-blue-500/20 text-blue-400 border-blue-500/35" : "bg-blue-50 text-blue-600 border-blue-200") 
+                      : theme.bgButtonSec
+                  }`}
+                  title={isLeftSidebarOpen ? "Hide Left Sidebar Filters (Ctrl+\\)" : "Show Left Sidebar Filters"}
+                >
+                  {isLeftSidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+                  className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${
+                    isRightSidebarOpen 
+                      ? (isDark ? "bg-blue-500/20 text-blue-400 border-blue-500/35" : "bg-blue-50 text-blue-600 border-blue-200") 
+                      : theme.bgButtonSec
+                  }`}
+                  title={isRightSidebarOpen ? "Hide Right Detail Inspector" : "Show Right Detail Inspector"}
+                >
+                  {isRightSidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1053,8 +1118,18 @@ function doPost(e) {
       {activeTab === "cockpit" && (
         <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-workflow">
           {/* Left Side: Pipeline Filters */}
-          <aside className={`w-full lg:w-64 border-b lg:border-r ${theme.border} ${theme.bgSidebar} p-4 shrink-0 font-mono`} id="sidebar">
-            <h2 className={`text-xs font-mono tracking-wider ${theme.textSecondary} uppercase font-bold mb-3 px-2`}>Pipeline Filters</h2>
+          {isLeftSidebarOpen && (
+            <aside className={`w-full lg:w-64 border-b lg:border-r ${theme.border} ${theme.bgSidebar} p-4 shrink-0 font-mono relative`} id="sidebar">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h2 className={`text-xs font-mono tracking-wider ${theme.textSecondary} uppercase font-bold`}>Pipeline Filters</h2>
+                <button
+                  onClick={() => setIsLeftSidebarOpen(false)}
+                  className={`p-1 rounded transition ${isDark ? "hover:bg-slate-800 text-slate-400 hover:text-white" : "hover:bg-[#f1f1ef] text-[#787774] hover:text-[#37352f]"}`}
+                  title="Collapse sidebar filters"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
             <nav className="space-y-1">
               <button
                 onClick={() => setFilter("ALL")}
@@ -1136,9 +1211,41 @@ function doPost(e) {
               </div>
             </div>
           </aside>
+          )}
 
           {/* Center Column: Opportunity Table Grid */}
-          <main className="flex-1 overflow-x-auto min-w-0" id="list-view">
+          <main className="flex-1 overflow-x-auto min-w-0 relative" id="list-view">
+            {/* Edge floating restore buttons when sidebars are collapsed */}
+            {!isLeftSidebarOpen && (
+              <button
+                onClick={() => setIsLeftSidebarOpen(true)}
+                className={`absolute left-0 top-1/4 z-10 p-1.5 rounded-r-md border-y border-r shadow-xs ${
+                  isDark 
+                    ? "bg-[#202020] border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800" 
+                    : "bg-white border-[#eae9e6] text-[#787774] hover:text-[#37352f] hover:bg-slate-100"
+                } transition-all duration-150 flex items-center gap-1 font-mono text-[9px] font-bold`}
+                title="Expand Filters Sidebar (Ctrl+\)"
+              >
+                <PanelLeftOpen className="w-3.5 h-3.5 text-blue-500" />
+                <span className="hidden sm:inline select-none tracking-wide">FILTERS</span>
+              </button>
+            )}
+
+            {!isRightSidebarOpen && (
+              <button
+                onClick={() => setIsRightSidebarOpen(true)}
+                className={`absolute right-0 top-1/4 z-10 p-1.5 rounded-l-md border-y border-l shadow-xs ${
+                  isDark 
+                    ? "bg-[#202020] border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800" 
+                    : "bg-white border-[#eae9e6] text-[#787774] hover:text-[#37352f] hover:bg-slate-100"
+                } transition-all duration-150 flex items-center gap-1 font-mono text-[9px] font-bold`}
+                title="Expand Detail Inspector (Ctrl+[)"
+              >
+                <span className="hidden sm:inline select-none tracking-wide">INSPECTOR</span>
+                <PanelRightOpen className="w-3.5 h-3.5 text-blue-500" />
+              </button>
+            )}
+
             {sortedAndFiltered.length === 0 ? (
               <div className={`flex flex-col items-center justify-center p-12 text-sm h-full min-h-[400px] ${theme.textSecondary}`}>
                 <FileText className={`w-10 h-10 mb-3 ${isDark ? "text-slate-700" : "text-slate-350"} animate-pulse`} />
@@ -1252,21 +1359,31 @@ function doPost(e) {
           </main>
 
           {/* Right Column: Dynamic Inspector Detail Panel */}
-          <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0`} id="detail-panel">
-            {selectedOpp ? (
-              <div className="space-y-5" id="detail-card">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#37352f]"} tracking-tight`}>{selectedOpp.companyName}</h3>
-                    <p className={`text-xs ${theme.textSecondary} font-medium`}>{selectedOpp.roleTitle}</p>
+          {isRightSidebarOpen && (
+            <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0`} id="detail-panel">
+              {selectedOpp ? (
+                <div className="space-y-5" id="detail-card">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#37352f]"} tracking-tight`}>{selectedOpp.companyName}</h3>
+                      <p className={`text-xs ${theme.textSecondary} font-medium`}>{selectedOpp.roleTitle}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => openEditModal(selectedOpp)}
+                        className={`p-1 px-2 text-[11px] rounded flex items-center gap-1 transition-all border ${theme.bgButtonSec}`}
+                      >
+                        <Pencil className="w-2.5 h-2.5" /> Edit
+                      </button>
+                      <button
+                        onClick={() => setIsRightSidebarOpen(false)}
+                        className={`p-1 rounded transition ${isDark ? "hover:bg-slate-800 text-slate-400 hover:text-white" : "hover:bg-[#f1f1ef] text-[#787774] hover:text-[#37352f]"}`}
+                        title="Collapse details panel"
+                      >
+                        <PanelRightClose className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => openEditModal(selectedOpp)}
-                    className={`p-1 px-2.5 text-[11px] rounded flex items-center gap-1 transition-all border ${theme.bgButtonSec}`}
-                  >
-                    Edit fields
-                  </button>
-                </div>
 
                 <div className={`space-y-4 border-t ${theme.border} pt-4 text-xs`}>
                   <div>
@@ -1367,13 +1484,21 @@ function doPost(e) {
                 </div>
               </div>
             ) : (
-              <div className={`h-full flex flex-col items-center justify-center ${theme.textSecondary} text-center py-12`}>
+              <div className={`h-full flex flex-col items-center justify-center ${theme.textSecondary} text-center py-12 relative`}>
+                <button
+                  onClick={() => setIsRightSidebarOpen(false)}
+                  className={`absolute top-2 right-2 p-1.5 rounded transition ${isDark ? "hover:bg-slate-850 text-slate-400 hover:text-white" : "hover:bg-[#f1f1ef] text-[#787774] hover:text-[#37352f]"}`}
+                  title="Collapse inspector"
+                >
+                  <PanelRightClose className="w-4 h-4" />
+                </button>
                 <FileText className={`w-8 h-8 mb-2 ${isDark ? "text-slate-700" : "text-slate-300"} animate-pulse`} />
                 <p className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-[#37352f]"}`}>No ledger opportunity is selected</p>
                 <p className="text-xs mt-1">Click any row in the spreadsheet list to view metadata details</p>
               </div>
             )}
           </aside>
+          )}
         </div>
       )}
 
