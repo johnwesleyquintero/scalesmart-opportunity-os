@@ -6,6 +6,7 @@ import {
   ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon, GripVertical, Search,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 const INITIAL_DATA: Opportunity[] = [
   {
@@ -108,6 +109,22 @@ const INITIAL_SIGNALS: GmailEmailSignal[] = [
     detectedRole: "Strategic Operations Lead"
   }
 ];
+
+const getRiskOfOpportunity = (opp: Opportunity): { type: "deadline_missed" | "no_response" | "none", message: string } => {
+  if (["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(opp.status)) {
+    return { type: "none", message: "" };
+  }
+  
+  if (opp.nextActionDate && opp.nextActionDate < "2026-05-24") {
+    return { type: "deadline_missed", message: `Action deadline missed (${opp.nextActionDate})` };
+  }
+
+  if (opp.status === "APPLIED" && opp.dateApplied && opp.dateApplied < "2026-05-14") {
+    return { type: "no_response", message: "Inbox quiet for over 10 days" };
+  }
+
+  return { type: "none", message: "" };
+};
 
 type FilterType = "ALL" | "ACTIVE" | "INTERVIEWING" | "ACTION_REQUIRED" | "DORMANT";
 
@@ -1268,8 +1285,16 @@ function doPost(e) {
       </header>
 
       {/* 2. TAB 1: Cockpit Ledger View */}
-      {activeTab === "cockpit" && (
-        <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-workflow">
+      <AnimatePresence mode="wait">
+        {activeTab === "cockpit" && (
+          <motion.div 
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="flex-1 flex flex-col lg:flex-row min-h-0" 
+            id="main-workflow"
+          >
           {/* Left Side: Pipeline Filters */}
           {isLeftSidebarOpen && (
             <aside className={`w-full lg:w-64 border-b lg:border-r ${theme.border} ${theme.bgSidebar} p-4 shrink-0 font-mono relative`} id="sidebar">
@@ -1399,6 +1424,84 @@ function doPost(e) {
               </button>
             )}
 
+            {/* Premium Horizontal KPI Metrics Dashboard Row */}
+            <div className={`grid grid-cols-2 md:grid-cols-5 gap-3 p-5 border-b ${theme.border} ${isDark ? "bg-slate-900/10" : "bg-[#fcfbf9]"} select-none`}>
+              <button
+                onClick={() => setFilter("ALL")}
+                className={`flex flex-col items-start p-3 rounded-lg border transition duration-155 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20 ${
+                  filter === "ALL" 
+                    ? (isDark ? "bg-[#252525] border-blue-500/50 shadow-sm" : "bg-white border-blue-600/50 shadow-xs")
+                    : (isDark ? "bg-[#1f1f1f]/50 border-slate-800/60 hover:bg-[#252525]" : "bg-white border-[#eae9e6] hover:bg-slate-50")
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-slate-400" : "bg-neutral-500"}`} />
+                  <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${theme.textSecondary}`}>Core Records</span>
+                </div>
+                <span className={`text-lg font-bold font-mono tracking-tight mt-1 ${isDark ? "text-slate-100" : "text-slate-900"}`}>{opportunities.length}</span>
+              </button>
+              
+              <button
+                onClick={() => setFilter("ACTIVE")}
+                className={`flex flex-col items-start p-3 rounded-lg border transition duration-155 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500/20 ${
+                  filter === "ACTIVE" 
+                    ? (isDark ? "bg-[#252525] border-emerald-500/50 shadow-sm" : "bg-white border-emerald-600/50 shadow-xs")
+                    : (isDark ? "bg-[#1f1f1f]/50 border-slate-800/60 hover:bg-[#252525]" : "bg-white border-[#eae9e6] hover:bg-slate-50")
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${theme.textSecondary}`}>Active Hub</span>
+                </div>
+                <span className="text-lg font-bold font-mono tracking-tight mt-1 text-emerald-500">{totalActive}</span>
+              </button>
+
+              <button
+                onClick={() => setFilter("INTERVIEWING")}
+                className={`flex flex-col items-start p-3 rounded-lg border transition duration-155 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500/20 ${
+                  filter === "INTERVIEWING" 
+                    ? (isDark ? "bg-[#252525] border-blue-500/50 shadow-sm" : "bg-white border-blue-600/50 shadow-xs")
+                    : (isDark ? "bg-[#1f1f1f]/50 border-slate-800/60 hover:bg-[#252525]" : "bg-white border-[#eae9e6] hover:bg-slate-50")
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${theme.textSecondary}`}>Active Loops</span>
+                </div>
+                <span className="text-lg font-bold font-mono tracking-tight mt-1 text-blue-500">{totalInterviewing}</span>
+              </button>
+
+              <button
+                onClick={() => setFilter("ACTION_REQUIRED")}
+                className={`flex flex-col items-start p-3 rounded-lg border transition duration-155 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/20 ${
+                  filter === "ACTION_REQUIRED" 
+                    ? (isDark ? "bg-[#2c221e] border-amber-600/70 shadow-sm" : "bg-amber-50/70 border-amber-600/50 shadow-xs")
+                    : (isDark ? "bg-[#1f1f1f]/50 border-slate-800/60 hover:bg-[#252525]" : "bg-white border-[#eae9e6] hover:bg-slate-50")
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${theme.textSecondary}`}>Alert Check</span>
+                </div>
+                <span className="text-lg font-bold font-mono tracking-tight mt-1 text-amber-500">{totalActionRequired}</span>
+              </button>
+
+              <button
+                onClick={() => setFilter("DORMANT")}
+                className={`col-span-2 md:col-span-1 flex flex-col items-start p-3 rounded-lg border transition duration-155 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500/20 ${
+                  filter === "DORMANT" 
+                    ? (isDark ? "bg-[#252525] border-orange-500/50 shadow-sm" : "bg-white border-orange-600/50 shadow-xs")
+                    : (isDark ? "bg-[#1f1f1f]/50 border-slate-800/60 hover:bg-[#252525]" : "bg-white border-[#eae9e6] hover:bg-slate-50")
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-450" />
+                  <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${theme.textSecondary}`}>Dormant</span>
+                </div>
+                <span className="text-lg font-bold font-mono tracking-tight mt-1 text-orange-400">{totalDormant}</span>
+              </button>
+            </div>
+
             {sortedAndFiltered.length === 0 ? (
               <div className={`flex flex-col items-center justify-center p-12 text-sm h-full min-h-[400px] ${theme.textSecondary}`}>
                 <FileText className={`w-10 h-10 mb-3 ${isDark ? "text-slate-700" : "text-slate-350"} animate-pulse`} />
@@ -1454,8 +1557,20 @@ function doPost(e) {
                           <GripVertical className="w-4 h-4 mx-auto opacity-50 hover:opacity-100 transition-opacity" />
                         </td>
                         <td className="py-1 px-2.5">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-x-1.5 gap-y-0.5">
                             <span className={`font-semibold ${isDark ? "text-slate-100" : "text-[#37352f]"}`}>{opp.companyName}</span>
+                            {getRiskOfOpportunity(opp).type !== "none" && (
+                              <span 
+                                className={`inline-flex items-center gap-0.5 px-1 rounded text-[8px] font-mono font-bold shrink-0 border uppercase ${
+                                  getRiskOfOpportunity(opp).type === "deadline_missed" 
+                                    ? "bg-rose-500/10 text-rose-450 border-rose-500/20" 
+                                    : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                }`}
+                                title={getRiskOfOpportunity(opp).message}
+                              >
+                                ! {getRiskOfOpportunity(opp).type === "deadline_missed" ? "Overdue" : "Stale"}
+                              </span>
+                            )}
                             <span className="hidden sm:inline text-slate-500 opacity-60 text-[10px] select-none">•</span>
                             <span className={`text-[11px] sm:text-xs ${theme.textSecondary} truncate max-w-[145px] sm:max-w-[185px]`}>{opp.roleTitle}</span>
                           </div>
@@ -1563,6 +1678,22 @@ function doPost(e) {
                     </div>
                   </div>
 
+                  {getRiskOfOpportunity(selectedOpp).type !== "none" && (
+                    <div className={`p-3.5 rounded-xl border flex gap-3 items-start text-xs leading-normal ${
+                      getRiskOfOpportunity(selectedOpp).type === "deadline_missed" 
+                        ? (isDark ? "bg-rose-500/10 border-rose-500/20 text-rose-300" : "bg-rose-50 border-rose-200 text-rose-800")
+                        : (isDark ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-amber-50 border-amber-200 text-amber-800")
+                    }`}>
+                      <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${
+                        getRiskOfOpportunity(selectedOpp).type === "deadline_missed" ? "text-rose-400" : "text-amber-500"
+                      }`} />
+                      <div>
+                        <span className="font-mono font-bold uppercase text-[10px] tracking-wide block">Attention Checkpoint Required</span>
+                        <p className="mt-0.5 text-[11px] leading-relaxed font-sans">{getRiskOfOpportunity(selectedOpp).message}</p>
+                      </div>
+                    </div>
+                  )}
+
                 <div className={`space-y-4 border-t ${theme.border} pt-4 text-xs`}>
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Status Transition</label>
@@ -1580,6 +1711,66 @@ function doPost(e) {
                       <option value="DORMANT" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>DORMANT</option>
                       <option value="ARCHIVED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ARCHIVED</option>
                     </select>
+
+                    {/* Quick Trigger Progress Pills */}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {selectedOpp.status !== "APPLIED" && selectedOpp.status !== "ASSESSMENT_PENDING" && selectedOpp.status !== "INTERVIEWING" && selectedOpp.status !== "OFFER" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "APPLIED")}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
+                            isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-80 border-slate-750" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950"
+                          }`}
+                        >
+                          → Applied
+                        </button>
+                      )}
+                      {selectedOpp.status !== "ASSESSMENT_PENDING" && selectedOpp.status !== "INTERVIEWING" && selectedOpp.status !== "OFFER" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "ASSESSMENT_PENDING")}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
+                            isDark ? "bg-slate-900 border-slate-800 text-slate-355 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-955"
+                          }`}
+                        >
+                          → Test
+                        </button>
+                      )}
+                      {selectedOpp.status !== "INTERVIEWING" && selectedOpp.status !== "OFFER" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "INTERVIEWING")}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
+                            isDark ? "bg-slate-900 border-slate-800 text-slate-355 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-955"
+                          }`}
+                        >
+                          → Loop
+                        </button>
+                      )}
+                      {selectedOpp.status !== "OFFER" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "OFFER")}
+                          className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 transition shrink-0"
+                        >
+                          ✨ Offered
+                        </button>
+                      )}
+                      {selectedOpp.status !== "REJECTED" && selectedOpp.status !== "DORMANT" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "REJECTED")}
+                          className="px-1.5 py-0.5 rounded text-[9px] font-mono border border-rose-500/10 text-rose-455 bg-rose-500/5 hover:bg-rose-500/10 transition hover:text-rose-355 shrink-0"
+                        >
+                          ✕ Reject
+                        </button>
+                      )}
+                      {selectedOpp.status !== "DORMANT" && selectedOpp.status !== "REJECTED" && (
+                        <button
+                          onClick={() => updateStatus(selectedOpp, "DORMANT")}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
+                            isDark ? "bg-slate-900 border-slate-800 text-slate-355 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-955"
+                          }`}
+                        >
+                          💤 Dormant
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 font-mono">
@@ -1677,12 +1868,19 @@ function doPost(e) {
             )}
           </aside>
           )}
-        </div>
-      )}
+          </motion.div>
+        )}
 
-      {/* 3. TAB 2: Signal Radar & Google Apps Script Setup Panel */}
-      {activeTab === "radar" && (
-        <div className={`flex-1 overflow-y-auto p-6 space-y-8 ${isDark ? "bg-[#191919]" : "bg-white"}`} id="radar-hub">
+        {/* 3. TAB 2: Signal Radar & Google Apps Script Setup Panel */}
+        {activeTab === "radar" && (
+          <motion.div 
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className={`flex-1 overflow-y-auto p-6 space-y-8 ${isDark ? "bg-[#191919]" : "bg-white"}`} 
+            id="radar-hub"
+          >
           
           {/* Conceptual Blueprint Banner */}
           <div className={`grid grid-cols-1 lg:grid-cols-4 gap-4 p-5 rounded-lg border ${isDark ? "bg-slate-900/40 border-slate-850" : "bg-[#f7f7f5] border-[#eae9e6]"}`}>
@@ -2193,13 +2391,29 @@ function doPost(e) {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-         {/* 4. Core Opportunity Form Modal */}
-      {modalMode !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setModalMode(null)} />
-          <div className={`relative w-full max-w-lg rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${isDark ? "bg-[#202020] border-[#2c2c2c]" : "bg-white border-[#eae9e6]"}`}>
+      </AnimatePresence>
+
+      {/* 4. Core Opportunity Form Modal */}
+      <AnimatePresence>
+        {modalMode !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="absolute inset-0 bg-black/50 backdrop-blur-xs" 
+              onClick={() => setModalMode(null)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              className={`relative w-full max-w-lg rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${isDark ? "bg-[#202020] border-[#2c2c2c]" : "bg-white border-[#eae9e6]"}`}
+            >
             <div className={`px-5 py-4 border-b flex justify-between items-center ${isDark ? "border-slate-850 bg-[#252525]/50" : "border-[#eae9e6] bg-[#f7f7f5]"}`}>
               <h3 className={`text-xs font-bold uppercase font-mono tracking-tight ${isDark ? "text-white" : "text-[#37352f]"}`}>
                 {modalMode === "ADD" ? "Create New Opportunity" : "Modify Opportunity details"}
@@ -2364,9 +2578,10 @@ function doPost(e) {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
