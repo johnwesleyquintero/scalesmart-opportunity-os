@@ -15,6 +15,23 @@ html, body, #root {
   font-family: var(--font-sans);
 }
 
+/* Custom text selection highlighter styling to solve dark text selection issues */
+::selection {
+  background-color: rgba(59, 130, 246, 0.4) !important; /* Premium semi-transparent blue */
+  color: #ffffff !important; /* Force readable high contrast text */
+}
+
+::-moz-selection {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+  color: #ffffff !important;
+}
+
+/* Distinctive selection styling inside inputs, textareas, and code snippets */
+input::selection, textarea::selection, pre::selection, code::selection {
+  background-color: rgba(245, 158, 11, 0.45) !important; /* Golden amber highlighter styling */
+  color: #ffffff !important;
+}
+
 /* Custom scrollbar styling for a polished UI feel */
 ::-webkit-scrollbar {
   width: 6px;

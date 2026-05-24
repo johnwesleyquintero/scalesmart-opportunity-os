@@ -164,7 +164,7 @@ export default function App() {
     textSecondary: "text-[#9b9a97]",
     border: "border-[#2c2c2c]",
     hoverRow: "hover:bg-[#252525]/60",
-    selectedRow: "bg-[#2c2c2c]/85",
+    selectedRow: "bg-[#22314f] text-white",
     thead: "bg-[#1f1f1f] text-[#9b9a97] border-[#2c2c2c]",
     accentBlue: "text-[#2eaadc]",
     indicatorBg: "bg-[#252525] text-[#9b9a97] border-[#2c2c2c]",
@@ -180,7 +180,7 @@ export default function App() {
     textSecondary: "text-[#787774]",
     border: "border-[#eae9e6]",
     hoverRow: "hover:bg-[#f1f1ef]",
-    selectedRow: "bg-[#eae9e6]/80",
+    selectedRow: "bg-[#e8f1fc] text-[#1c1c1c]",
     thead: "bg-[#f7f7f5] text-[#787774] border-[#eae9e6]",
     accentBlue: "text-[#2383e2]",
     indicatorBg: "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]",
@@ -1550,7 +1550,7 @@ function doPost(e) {
                           }
                         }}
                         className={`cursor-pointer transition duration-155 ${theme.hoverRow} ${
-                          isSelected ? `${theme.selectedRow} border-l-4 ${isDark ? "border-blue-450 bg-blue-500/5" : "border-blue-600 bg-blue-500/5"}` : ""
+                          isSelected ? `${theme.selectedRow} border-l-4 ${isDark ? "border-blue-500" : "border-blue-600"}` : ""
                         } ${isBeingDragged ? "opacity-30 bg-blue-500/10 cursor-grabbing" : ""}`}
                       >
                         <td className="py-1 px-1.5 text-center text-slate-400 hover:text-blue-500 cursor-grab active:cursor-grabbing" title="Drag row to manually set priority order">
