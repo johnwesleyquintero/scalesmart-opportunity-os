@@ -12,6 +12,16 @@ export type OpportunityTier = "T1" | "T2" | "T3";
 
 export type Priority = "P0" | "P1" | "P2";
 
+export interface GmailEmailSignal {
+  id: string;
+  sender: string;
+  subject: string;
+  snippet: string;
+  detectedStatus: OpportunityStatus;
+  detectedCompany: string;
+  detectedRole: string;
+}
+
 export interface Opportunity {
   id: string;
   companyName: string;
