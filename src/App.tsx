@@ -3,7 +3,7 @@ import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "./typ
 import {
   Plus, X, Pencil, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, Copy, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
-  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon,
+  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon, GripVertical,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 
@@ -202,6 +202,35 @@ export default function App() {
     } else {
       setSortField(field);
       setSortDirection("asc");
+    }
+  };
+
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const handleDragAndDropReorder = (draggedId: string, overId: string) => {
+    if (draggedId === overId) return;
+
+    // Clear active column sorting to preserve custom order immediately
+    if (sortField) {
+      setSortField(null);
+    }
+
+    const fromIndex = opportunities.findIndex((item) => item.id === draggedId);
+    const toIndex = opportunities.findIndex((item) => item.id === overId);
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      const reordered = [...opportunities];
+      const [movedItem] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, movedItem);
+
+      setOpportunities(reordered);
+
+      // Auto-sync order with Google Sheet if appsScriptUrl is present
+      if (appsScriptUrl.trim()) {
+        pushLedgerToSheets(reordered, true).catch((err) => {
+          console.error("Auto-sync of reordered list to Google Sheets failed:", err);
+        });
+      }
     }
   };
   const [modalMode, setModalMode] = useState<"ADD" | "EDIT" | null>(null);
@@ -1373,6 +1402,9 @@ function doPost(e) {
               <table className="w-full text-left border-collapse text-sm" id="table">
                 <thead>
                   <tr className={`border-b ${theme.border} ${theme.textSecondary} font-mono text-xs select-none ${isDark ? "bg-slate-900/40" : "bg-[#f7f7f5]"}`}>
+                    <th className={`w-10 py-3 px-2 text-center border-b ${theme.border}`} title="Manual Drag Priority Order">
+                      <span className="sr-only">Drag</span>
+                    </th>
                     {renderSortHeader("Company / Target Role", "companyName")}
                     {renderSortHeader("Tier", "tier")}
                     {renderSortHeader("Integration Source", "source")}
@@ -1385,14 +1417,35 @@ function doPost(e) {
                 <tbody className={`divide-y ${isDark ? "divide-slate-850" : "divide-[#eae9e6]"}`}>
                   {sortedAndFiltered.map((opp) => {
                     const isSelected = selectedId === opp.id;
+                    const isBeingDragged = draggingId === opp.id;
                     return (
                       <tr
                         key={opp.id}
                         onClick={() => setSelectedId(opp.id)}
-                        className={`cursor-pointer transition duration-150 ${theme.hoverRow} ${
-                          isSelected ? `${theme.selectedRow} border-l-2 ${isDark ? "border-blue-400" : "border-blue-600"}` : ""
-                        }`}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggingId(opp.id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        onDragEnd={() => {
+                          setDraggingId(null);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                        }}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          if (draggingId && draggingId !== opp.id) {
+                            handleDragAndDropReorder(draggingId, opp.id);
+                          }
+                        }}
+                        className={`cursor-pointer transition duration-155 ${theme.hoverRow} ${
+                          isSelected ? `${theme.selectedRow} border-l-4 ${isDark ? "border-blue-450 bg-blue-500/5" : "border-blue-600 bg-blue-500/5"}` : ""
+                        } ${isBeingDragged ? "opacity-30 bg-blue-500/10 cursor-grabbing" : ""}`}
                       >
+                        <td className="py-3.5 px-2 text-center text-slate-400 hover:text-blue-500 cursor-grab active:cursor-grabbing" title="Drag row to manually set priority order">
+                          <GripVertical className="w-4 h-4 mx-auto opacity-50 hover:opacity-100 transition-opacity" />
+                        </td>
                         <td className="py-3.5 px-4">
                           <div>
                             <span className={`font-semibold ${isDark ? "text-slate-100" : "text-[#37352f]"} block`}>{opp.companyName}</span>
