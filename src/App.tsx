@@ -3,7 +3,7 @@ import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "./typ
 import {
   Plus, X, Pencil, Trash, FileText, Check, AlertTriangle, ExternalLink,
   Radio, Database, Code, Copy, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
-  ChevronUp, ChevronDown, ChevronsUpDown
+  ChevronUp, ChevronDown, ChevronsUpDown, Sun, Moon
 } from "lucide-react";
 
 const INITIAL_DATA: Opportunity[] = [
@@ -124,6 +124,50 @@ export default function App() {
   });
 
   // Controls UI layout state
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem("scalesmart_dark_theme");
+    return saved !== "false"; // default is true (dark mode) as currently styled
+  });
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_dark_theme", String(isDark));
+  }, [isDark]);
+
+  // Notion Theme styling variables mapping
+  const theme = isDark ? {
+    bgApp: "bg-[#191919] text-[#f1f1ef]",
+    bgHeader: "bg-[#202020] border-[#2c2c2c]",
+    bgSidebar: "bg-[#202020] border-[#2c2c2c]",
+    bgCard: "bg-[#191919] border-[#2c2c2c]",
+    bgPanel: "bg-[#202020] border-[#2c2c2c]",
+    bgInput: "bg-[#252525] border-[#2c2c2c] text-[#f1f1ef] placeholder:text-[#9b9a97]/60 focus:border-[#2eaadc]",
+    bgButtonSec: "bg-[#252525] hover:bg-[#2f2f2f] text-[#f1f1ef] border-[#2c2c2c]",
+    textPrimary: "text-[#f1f1ef]",
+    textSecondary: "text-[#9b9a97]",
+    border: "border-[#2c2c2c]",
+    hoverRow: "hover:bg-[#252525]/60",
+    selectedRow: "bg-[#2c2c2c]/85",
+    thead: "bg-[#1f1f1f] text-[#9b9a97] border-[#2c2c2c]",
+    accentBlue: "text-[#2eaadc]",
+    indicatorBg: "bg-[#252525] text-[#9b9a97] border-[#2c2c2c]",
+  } : {
+    bgApp: "bg-[#fbfbfa] text-[#37352f]",
+    bgHeader: "bg-[#f7f7f5] border-[#eae9e6]",
+    bgSidebar: "bg-[#f7f7f5] border-[#eae9e6]",
+    bgCard: "bg-[#ffffff] border-[#eae9e6]",
+    bgPanel: "bg-[#f7f7f5] border-[#eae9e6]",
+    bgInput: "bg-[#ffffff] border-[#eae9e6] text-[#37352f] placeholder:text-[#787774]/60 focus:border-[#2383e2]",
+    bgButtonSec: "bg-[#ffffff] hover:bg-[#f1f1ef] text-[#37352f] border-[#eae9e6]",
+    textPrimary: "text-[#37352f]",
+    textSecondary: "text-[#787774]",
+    border: "border-[#eae9e6]",
+    hoverRow: "hover:bg-[#f1f1ef]",
+    selectedRow: "bg-[#eae9e6]/80",
+    thead: "bg-[#f7f7f5] text-[#787774] border-[#eae9e6]",
+    accentBlue: "text-[#2383e2]",
+    indicatorBg: "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]",
+  };
+
   const [activeTab, setActiveTab] = useState<"cockpit" | "radar">("cockpit");
   const [filter, setFilter] = useState<FilterType>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -151,6 +195,108 @@ export default function App() {
   const [sandboxExtractedRole, setSandboxExtractedRole] = useState("");
   const [sandboxExtractedStatus, setSandboxExtractedStatus] = useState<OpportunityStatus>("APPLIED");
   const [isSandboxParsed, setIsSandboxParsed] = useState(false);
+
+  // Apps Script Web App Connection Configs
+  const [appsScriptUrl, setAppsScriptUrl] = useState<string>(() => {
+    return localStorage.getItem("scalesmart_appscript_url") || "";
+  });
+  const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<"idle" | "success" | "error">("idle");
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_appscript_url", appsScriptUrl);
+    if (appsScriptUrl) {
+      setConnectionStatus("success");
+    }
+  }, [appsScriptUrl]);
+
+  const handleConnectAppsScript = async (urlToTest: string) => {
+    if (!urlToTest.trim()) {
+      alert("Please enter a valid Google Apps Script Web App URL first.");
+      return;
+    }
+    const cleanUrl = urlToTest.trim();
+    setIsConnecting(true);
+    setConnectionError(null);
+    try {
+      const target = `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}action=fetch`;
+      const res = await fetch(target, { method: "GET" });
+      if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setOpportunities(data);
+        setConnectionStatus("success");
+        setAppsScriptUrl(cleanUrl);
+        alert(`Connected to live Google Sheets! Successfully fetched and synchronized ${data.length} ledger row(s).`);
+      } else {
+        throw new Error("Payload did not return a valid ledger rows array. Please ensure the Apps Script code is copied and deployed perfectly.");
+      }
+    } catch (err: any) {
+      console.error("Live Web App Connection Error", err);
+      setConnectionStatus("error");
+      setConnectionError(err.toString());
+      alert(`Sync failed: ${err.toString()}\n\nCRITICAL APPS SCRIPT VERIFICATION:\n1. Make sure you deployed the script as a "Web App"\n2. Set "Execute as": "Me"\n3. Set "Who has access": "Anyone" (so the browser can execute the fetch without Google OAuth pre-blocking).\n4. Confirm you ran setupSheet() in the Google Sheet first.`);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const triggerLiveScan = async () => {
+    if (!appsScriptUrl.trim()) {
+      alert("Please configure and connect your Apps Script Deployment URL first.");
+      return;
+    }
+    setIsConnecting(true);
+    setConnectionError(null);
+    try {
+      const target = `${appsScriptUrl.trim()}${appsScriptUrl.trim().includes('?') ? '&' : '?'}action=scan`;
+      const res = await fetch(target, { method: "GET" });
+      if (!res.ok) throw new Error(`HTTP Error Status: ${res.status}`);
+      const result = await res.json();
+      if (result.status === "success") {
+        alert("Live Gmail Inbox sweep completed successfully! Fetching fresh ledger sync now...");
+        await handleConnectAppsScript(appsScriptUrl);
+      } else {
+        throw new Error(result.message || "Unknown error occurred on scan.");
+      }
+    } catch (err: any) {
+      console.error("Trigger Scan Error", err);
+      alert(`Trigger Sweep Failed: ${err.toString()}\nMake sure Gmail permissions are authorized in your Apps Script project by running a function once in the editor.`);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const pushLedgerToSheets = async () => {
+    if (!appsScriptUrl.trim()) {
+      alert("Please configure and connect your Apps Script Deployment URL first.");
+      return;
+    }
+    if (!confirm("Are you sure you want to push your local cockpit state to Google Sheets? This will update the rows in your target Sheet1 to match your current React UI state.")) {
+      return;
+    }
+    setIsConnecting(true);
+    try {
+      const res = await fetch(appsScriptUrl.trim(), {
+        method: "POST",
+        mode: "no-cors", // bypass typical pre-flight redirect restrictions in Apps Script Web App
+        headers: {
+          "Content-Type": "text/plain"
+        },
+        body: JSON.stringify({
+          action: "sync_all",
+          opportunities: opportunities
+        })
+      });
+      alert("Cockpit push complete! Your Google Sheets rows have been updated successfully.");
+    } catch (err: any) {
+      console.error("Push state failed", err);
+      alert(`Push synchronization failed: ${err.toString()}`);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   // Manual code copy indicator
   const [hasCopiedCode, setHasCopiedCode] = useState(false);
@@ -575,6 +721,129 @@ function setupTrigger() {
     .timeBased()
     .everyHours(1)
     .create();
+}
+
+/**
+ * API Web App Endpoint: doGet
+ * Allows the React UI to fetch the live ledger and trigger Gmail sweeps.
+ */
+function doGet(e) {
+  var action = e && e.parameter && e.parameter.action;
+  
+  if (action === "fetch") {
+    return handleFetchLedger();
+  } else if (action === "scan") {
+    scanGmailSignals();
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Gmail inbox sweep completed successfully" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Default: return live ledger
+  return handleFetchLedger();
+}
+
+function handleFetchLedger() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME) || SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  var range = sheet.getRange(2, 1, lastRow - 1, 11);
+  var values = range.getValues();
+  var items = [];
+  
+  for (var i = 0; i < values.length; i++) {
+    var r = values[i];
+    items.push({
+      id: r[10] || "row-" + (i + 2),
+      companyName: r[0],
+      roleTitle: r[1] || "Strategic Role",
+      source: r[2] || "Direct",
+      tier: r[3] || "T2",
+      status: r[4] || "NEW",
+      priority: r[5] || "P2",
+      link: r[6] || "",
+      dateApplied: r[7] ? (r[7] instanceof Date ? Utilities.formatDate(r[7], Session.getScriptTimeZone(), "yyyy-MM-dd") : String(r[7])) : "",
+      lastActivityDate: r[8] ? (r[8] instanceof Date ? Utilities.formatDate(r[8], Session.getScriptTimeZone(), "yyyy-MM-dd") : String(r[8])) : "",
+      notes: r[9] || "",
+      threadId: r[10] || ""
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(items))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * API Web App Endpoint: doPost
+ * Receives pushes from the React Cockpit to save ledger additions/modifications.
+ */
+function doPost(e) {
+  try {
+    var postData = e && e.postData && e.postData.contents;
+    if (!postData) {
+      return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "No data payload found" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var payload = JSON.parse(postData);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME) || SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    if (payload.action === "sync_all") {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.getRange(2, 1, lastRow - 1, 11).clearContent();
+      }
+      
+      var opportunities = payload.opportunities;
+      if (opportunities && opportunities.length > 0) {
+        var rows = opportunities.map(function(o) {
+          return [
+            o.companyName,
+            o.roleTitle,
+            o.source,
+            o.tier,
+            o.status,
+            o.priority,
+            o.link || "",
+            o.dateApplied || "",
+            o.lastActivityDate || "",
+            o.notes || "",
+            o.threadId || o.id
+          ];
+        });
+        sheet.getRange(2, 1, rows.length, 11).setValues(rows);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Ledger batch-synchronized successfully." }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } else if (payload.action === "add_opportunity") {
+      var o = payload.opportunity;
+      if (o) {
+        sheet.appendRow([
+          o.companyName,
+          o.roleTitle,
+          o.source,
+          o.tier,
+          o.status,
+          o.priority,
+          o.link || "",
+          o.dateApplied || "",
+          o.lastActivityDate || "",
+          o.notes || "",
+          o.id
+        ]);
+        return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Opportunity added successfully." }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: "Unknown post action" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }`;
   };
 
@@ -674,11 +943,13 @@ function setupTrigger() {
   const renderSortHeader = (label: string, field: keyof Opportunity) => {
     const isActive = sortField === field;
     return (
-      <th className="p-0 font-normal align-middle select-none border-b border-slate-800">
+      <th className={`p-0 font-normal align-middle select-none border-b ${theme.border}`}>
         <button
           onClick={() => handleSort(field)}
-          className={`flex items-center gap-1.5 hover:bg-slate-900 text-left w-full py-3 px-4 font-mono text-xs transition focus:outline-none ${
-            isActive ? "text-blue-400 font-semibold bg-slate-900/45" : "text-slate-400 hover:text-white"
+          className={`flex items-center gap-1.5 ${isDark ? "hover:bg-slate-900" : "hover:bg-[#eae9e6]/50"} text-left w-full py-3 px-4 font-mono text-xs transition focus:outline-none ${
+            isActive 
+              ? `${theme.accentBlue} font-semibold ${isDark ? "bg-slate-900/45" : "bg-[#eae9e6]/30"}` 
+              : `${theme.textSecondary} hover:text-blue-500`
           }`}
         >
           <span>{label}</span>
@@ -697,34 +968,49 @@ function setupTrigger() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-slate-850">
+    <div className={`min-h-screen ${theme.bgApp} flex flex-col font-sans antialiased selection:bg-slate-800`}>
       
       {/* 1. Header with System Architecture Integration */}
-      <header className="border-b border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900" id="header">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight text-white font-mono">ScaleSmart OS</span>
-            <span className="text-xs text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700 font-mono">v1.0 (Radar Core)</span>
+      <header className={`border-b ${theme.border} px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${theme.bgHeader}`} id="header">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 justify-between w-full sm:w-auto">
+            <span className={`text-xl font-bold tracking-tight ${isDark ? "text-white" : "text-[#37352f]"} font-mono`}>ScaleSmart OS</span>
+            <span className={`text-xs ${isDark ? "text-slate-400 bg-slate-850/80 border-slate-700" : "text-neutral-500 bg-neutral-200/50 border-neutral-300"} px-2.5 py-1 rounded-md border font-mono`}>v1.0 (Radar)</span>
           </div>
-          <div className="flex items-center gap-1.5 p-0.5 bg-slate-950 border border-slate-800 rounded-lg">
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 p-0.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-[#eae9e6]/50 border-neutral-300"} border rounded-lg`}>
+              <button
+                onClick={() => setActiveTab("cockpit")}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 ${
+                  activeTab === "cockpit" 
+                    ? (isDark ? "bg-slate-800 text-white border border-slate-700" : "bg-white text-[#37352f] border border-[#eae9e6] shadow-xs") 
+                    : `${theme.textSecondary} hover:text-blue-500`
+                }`}
+              >
+                <Database className="w-3.5 h-3.5" /> Cockpit Ledger
+              </button>
+              <button
+                onClick={() => setActiveTab("radar")}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 relative ${
+                  activeTab === "radar" 
+                    ? (isDark ? "bg-slate-800 text-white border border-slate-700" : "bg-white text-[#37352f] border border-[#eae9e6] shadow-xs") 
+                    : `${theme.textSecondary} hover:text-blue-500`
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5 text-blue-500" /> Signal Radar
+                {radarSignals.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                )}
+              </button>
+            </div>
+
+            {/* Theme Toggle Button */}
             <button
-              onClick={() => setActiveTab("cockpit")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 ${
-                activeTab === "cockpit" ? "bg-slate-800 text-white border border-slate-700" : "text-slate-400 hover:text-slate-200"
-              }`}
+              onClick={() => setIsDark(!isDark)}
+              className={`p-1.5 rounded-lg border transition duration-150 flex items-center justify-center ${theme.bgButtonSec}`}
+              title="Toggle theme mode"
             >
-              <Database className="w-3.5 h-3.5" /> Cockpit Ledger
-            </button>
-            <button
-              onClick={() => setActiveTab("radar")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium font-mono transition flex items-center gap-1.5 relative ${
-                activeTab === "radar" ? "bg-slate-800 text-white border border-slate-700" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5 text-blue-400 animate-pulse" /> Signal Radar
-              {radarSignals.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-              )}
+              {isDark ? <Sun className="w-4 h-4 text-amber-450" /> : <Moon className="w-4 h-4 text-[#37352f]" />}
             </button>
           </div>
         </div>
@@ -736,7 +1022,7 @@ function setupTrigger() {
               placeholder="Search Company or Role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 w-full sm:w-64"
+              className={`border rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500 w-full sm:w-64 ${theme.bgInput}`}
             />
             <button
               onClick={openAddModal}
@@ -749,7 +1035,7 @@ function setupTrigger() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button
               onClick={handleExportCSV}
-              className="border border-slate-800 hover:bg-slate-800 bg-slate-950 text-slate-300 font-medium text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition"
+              className={`border font-medium text-xs px-3.5 py-2 rounded flex items-center gap-1.5 transition ${theme.bgButtonSec}`}
             >
               <Download className="w-4 h-4" /> Export Ledger CSV
             </button>
@@ -767,73 +1053,83 @@ function setupTrigger() {
       {activeTab === "cockpit" && (
         <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-workflow">
           {/* Left Side: Pipeline Filters */}
-          <aside className="w-full lg:w-64 border-b lg:border-r border-slate-800 bg-slate-900/60 p-4 shrink-0 font-mono" id="sidebar">
-            <h2 className="text-xs font-mono tracking-wider text-slate-500 uppercase font-bold mb-3 px-2">Pipeline Filters</h2>
+          <aside className={`w-full lg:w-64 border-b lg:border-r ${theme.border} ${theme.bgSidebar} p-4 shrink-0 font-mono`} id="sidebar">
+            <h2 className={`text-xs font-mono tracking-wider ${theme.textSecondary} uppercase font-bold mb-3 px-2`}>Pipeline Filters</h2>
             <nav className="space-y-1">
               <button
                 onClick={() => setFilter("ALL")}
-                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded transition uppercase ${
-                  filter === "ALL" ? "bg-slate-800 text-white font-bold border border-slate-700" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded border transition uppercase ${
+                  filter === "ALL" 
+                    ? (isDark ? "bg-[#2c2c2c] text-white font-bold border-[#333333]" : "bg-white text-[#37352f] font-bold border-[#eae9e6] shadow-xs")
+                    : `border-transparent ${theme.textSecondary} hover:text-blue-500 hover:${isDark ? "bg-slate-800/40" : "bg-[#f1f1ef]"}`
                 }`}
               >
                 <span>All Core Records</span>
-                <span className="text-xs bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-850">{opportunities.length}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded border ${isDark ? "bg-slate-950 text-slate-400 border-slate-850" : "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]"}`}>{opportunities.length}</span>
               </button>
               <button
                 onClick={() => setFilter("ACTIVE")}
-                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded transition uppercase ${
-                  filter === "ACTIVE" ? "bg-slate-800 text-white font-bold border border-slate-700" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded border transition uppercase ${
+                  filter === "ACTIVE" 
+                    ? (isDark ? "bg-[#2c2c2c] text-white font-bold border-[#333333]" : "bg-white text-[#37352f] font-bold border-[#eae9e6] shadow-xs")
+                    : `border-transparent ${theme.textSecondary} hover:text-blue-500 hover:${isDark ? "bg-slate-800/40" : "bg-[#f1f1ef]"}`
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active Pipeline
                 </span>
-                <span className="text-xs bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-850">{totalActive}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded border ${isDark ? "bg-slate-950 text-slate-400 border-slate-850" : "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]"}`}>{totalActive}</span>
               </button>
               <button
                 onClick={() => setFilter("INTERVIEWING")}
-                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded transition uppercase ${
-                  filter === "INTERVIEWING" ? "bg-slate-800 text-white font-bold border border-slate-700" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded border transition uppercase ${
+                  filter === "INTERVIEWING" 
+                    ? (isDark ? "bg-[#2c2c2c] text-white font-bold border-[#333333]" : "bg-white text-[#37352f] font-bold border-[#eae9e6] shadow-xs")
+                    : `border-transparent ${theme.textSecondary} hover:text-blue-500 hover:${isDark ? "bg-slate-800/40" : "bg-[#f1f1ef]"}`
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span> Interviewing
                 </span>
-                <span className="text-xs bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-850">{totalInterviewing}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded border ${isDark ? "bg-slate-950 text-slate-400 border-slate-850" : "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]"}`}>{totalInterviewing}</span>
               </button>
               <button
                 onClick={() => setFilter("ACTION_REQUIRED")}
-                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded transition uppercase ${
-                  filter === "ACTION_REQUIRED" ? "bg-slate-850 border border-amber-600/30 text-amber-300 font-bold" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded border transition uppercase ${
+                  filter === "ACTION_REQUIRED" 
+                    ? (isDark ? "bg-amber-950/40 border border-amber-600/30 text-amber-300 font-bold" : "bg-amber-50 border border-amber-250 text-amber-800 font-bold")
+                    : `border-transparent ${theme.textSecondary} hover:text-amber-500 hover:${isDark ? "bg-slate-800/40" : "bg-[#f1f1ef]"}`
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" /> Action Required (P0/P1)
                 </span>
-                <span className="text-xs bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-850">{totalActionRequired}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded border ${isDark ? "bg-slate-950 text-slate-400 border-slate-850" : "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]"}`}>{totalActionRequired}</span>
               </button>
               <button
                 onClick={() => setFilter("DORMANT")}
-                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded transition uppercase ${
-                  filter === "DORMANT" ? "bg-slate-800 text-white font-bold border border-slate-700" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                className={`w-full flex justify-between items-center px-3 py-2 text-xs rounded border transition uppercase ${
+                  filter === "DORMANT" 
+                    ? (isDark ? "bg-[#2c2c2c] text-white font-bold border-[#333333]" : "bg-white text-[#37352f] font-bold border-[#eae9e6] shadow-xs")
+                    : `border-transparent ${theme.textSecondary} hover:text-blue-500 hover:${isDark ? "bg-slate-800/40" : "bg-[#f1f1ef]"}`
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-orange-400"></span> Dormant
                 </span>
-                <span className="text-xs bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-850">{totalDormant}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded border ${isDark ? "bg-slate-950 text-slate-400 border-slate-850" : "bg-[#eae9e6]/50 text-[#787774] border-[#eae9e6]"}`}>{totalDormant}</span>
               </button>
             </nav>
 
             <div className="mt-8 pt-6 border-t border-slate-800 space-y-4">
-              <div className="p-3 bg-slate-900/80 rounded-lg border border-slate-800">
+              <div className={`p-3 rounded-lg border ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
                 <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase block mb-1">Architecture Radar</span>
-                <p className="text-[11px] leading-relaxed text-slate-400">
+                <p className={`text-[11px] leading-relaxed ${theme.textSecondary}`}>
                   Gmail scans emails, pushes matching events to Google Sheets. React app visualizes the ledger book directly from Sheets records.
                 </p>
                 <button
                   onClick={() => setActiveTab("radar")}
-                  className="text-[11px] text-blue-400 hover:text-blue-300 underline font-medium mt-2 flex items-center gap-1"
+                  className="text-[11px] text-blue-500 hover:text-blue-400 underline font-medium mt-2 flex items-center gap-1"
                 >
                   Configure Pipe <ExternalLink className="w-2.5 h-2.5" />
                 </button>
@@ -844,55 +1140,55 @@ function setupTrigger() {
           {/* Center Column: Opportunity Table Grid */}
           <main className="flex-1 overflow-x-auto min-w-0" id="list-view">
             {sortedAndFiltered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-slate-500 text-sm h-full min-h-[400px]">
-                <FileText className="w-10 h-10 mb-3 text-slate-700 animate-pulse" />
-                <p className="font-medium text-slate-400">No opportunities match selection criteria</p>
-                <p className="text-xs mt-1 text-slate-500">Adjust active search, change pipeline filters, or add records manually</p>
+              <div className={`flex flex-col items-center justify-center p-12 text-sm h-full min-h-[400px] ${theme.textSecondary}`}>
+                <FileText className={`w-10 h-10 mb-3 ${isDark ? "text-slate-700" : "text-slate-350"} animate-pulse`} />
+                <p className={`font-medium ${isDark ? "text-slate-400" : "text-[#37352f]"}`}>No opportunities match selection criteria</p>
+                <p className="text-xs mt-1 text-slate-500 font-mono">Adjust active search, change pipeline filters, or add records manually</p>
               </div>
             ) : (
               <table className="w-full text-left border-collapse text-sm" id="table">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-mono text-xs select-none bg-slate-900/40">
+                  <tr className={`border-b ${theme.border} ${theme.textSecondary} font-mono text-xs select-none ${isDark ? "bg-slate-900/40" : "bg-[#f7f7f5]"}`}>
                     {renderSortHeader("Company / Target Role", "companyName")}
                     {renderSortHeader("Tier", "tier")}
                     {renderSortHeader("Integration Source", "source")}
                     {renderSortHeader("Status Status", "status")}
                     {renderSortHeader("Priority Class", "priority")}
                     {renderSortHeader("Next Action Limit", "nextActionDate")}
-                    <th className="py-3 px-4 text-right font-mono text-xs font-normal border-b border-slate-800">Ledger Actions</th>
+                    <th className={`py-3 px-4 text-right font-mono text-xs font-normal border-b ${theme.border}`}>Ledger Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-850">
+                <tbody className={`divide-y ${isDark ? "divide-slate-850" : "divide-[#eae9e6]"}`}>
                   {sortedAndFiltered.map((opp) => {
                     const isSelected = selectedId === opp.id;
                     return (
                       <tr
                         key={opp.id}
                         onClick={() => setSelectedId(opp.id)}
-                        className={`cursor-pointer transition duration-150 hover:bg-slate-900/60 ${
-                          isSelected ? "bg-slate-900 border-l-2 border-blue-500" : ""
+                        className={`cursor-pointer transition duration-150 ${theme.hoverRow} ${
+                          isSelected ? `${theme.selectedRow} border-l-2 ${isDark ? "border-blue-400" : "border-blue-600"}` : ""
                         }`}
                       >
                         <td className="py-3.5 px-4">
                           <div>
-                            <span className="font-semibold text-slate-100 block">{opp.companyName}</span>
-                            <span className="text-xs text-slate-400">{opp.roleTitle}</span>
+                            <span className={`font-semibold ${isDark ? "text-slate-100" : "text-[#37352f]"} block`}>{opp.companyName}</span>
+                            <span className={`text-xs ${theme.textSecondary}`}>{opp.roleTitle}</span>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 font-mono">
                           <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
                             opp.tier === "T1" ? "bg-rose-500/10 text-rose-300 border border-rose-500/30" :
                             opp.tier === "T2" ? "bg-amber-500/10 text-amber-300 border border-amber-500/30" :
-                            "bg-slate-800 text-slate-300 border border-slate-700"
+                            (isDark ? "bg-slate-800 text-slate-300 border border-slate-700" : "bg-[#f1f1ef] text-[#787774] border border-[#eae9e6]")
                           }`}>
                             {opp.tier}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
+                        <td className={`py-3.5 px-4 ${isDark ? "text-slate-300" : "text-[#37352f]"} font-mono text-xs`}>
                           <span className={`flex items-center gap-1.5 ${
-                            opp.source === "Gmail" ? "text-blue-400" : "text-slate-400"
+                            opp.source === "Gmail" ? (isDark ? "text-blue-400" : "text-blue-600") : theme.textSecondary
                           }`}>
-                            {opp.source === "Gmail" && <Radio className="w-3 h-3 animator-pulse" />}
+                            {opp.source === "Gmail" && <Radio className="w-3 h-3 animate-pulse" />}
                             {opp.source}
                           </span>
                         </td>
@@ -900,47 +1196,47 @@ function setupTrigger() {
                           <select
                             value={opp.status}
                             onChange={(e) => updateStatus(opp, e.target.value as OpportunityStatus)}
-                            className="bg-slate-950 border border-slate-850 text-xs rounded px-2.5 py-1 text-slate-300 font-mono focus:outline-none focus:border-blue-500 cursor-pointer"
+                            className={`border text-[11px] rounded px-2.5 py-1 font-mono focus:outline-none focus:border-blue-500 cursor-pointer ${theme.bgInput}`}
                           >
-                            <option value="NEW">NEW</option>
-                            <option value="APPLIED">APPLIED</option>
-                            <option value="ASSESSMENT_PENDING">ASSESSMENT PENDING</option>
-                            <option value="INTERVIEWING">INTERVIEWING</option>
-                            <option value="OFFER">OFFER</option>
-                            <option value="REJECTED">REJECTED</option>
-                            <option value="DORMANT">DORMANT</option>
-                            <option value="ARCHIVED">ARCHIVED</option>
+                            <option value="NEW" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>NEW</option>
+                            <option value="APPLIED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>APPLIED</option>
+                            <option value="ASSESSMENT_PENDING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ASSESSMENT PENDING</option>
+                            <option value="INTERVIEWING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>INTERVIEWING</option>
+                            <option value="OFFER" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>OFFER</option>
+                            <option value="REJECTED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>REJECTED</option>
+                            <option value="DORMANT" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>DORMANT</option>
+                            <option value="ARCHIVED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ARCHIVED</option>
                           </select>
                         </td>
                         <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={opp.priority}
                             onChange={(e) => updatePriority(opp, e.target.value as Priority)}
-                            className={`bg-slate-950 border border-slate-850 text-xs font-mono font-bold rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 cursor-pointer ${
+                            className={`border text-[11px] font-mono font-bold rounded px-2.5 py-1 focus:outline-none focus:border-blue-500 cursor-pointer ${theme.bgInput} ${
                               opp.priority === "P0" ? "text-rose-400" :
-                              opp.priority === "P1" ? "text-amber-400" : "text-slate-400"
+                              opp.priority === "P1" ? "text-amber-400" : (isDark ? "text-slate-400" : "text-neutral-500")
                             }`}
                           >
-                            <option value="P0">P0</option>
-                            <option value="P1">P1</option>
-                            <option value="P2">P2</option>
+                            <option value="P0" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P0</option>
+                            <option value="P1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P1</option>
+                            <option value="P2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P2</option>
                           </select>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-300 font-mono text-xs">
-                          {opp.nextActionDate ? opp.nextActionDate : <span className="text-slate-600">—</span>}
+                        <td className={`py-3.5 px-4 ${isDark ? "text-slate-300" : "text-[#37352f]"} font-mono text-xs`}>
+                          {opp.nextActionDate ? opp.nextActionDate : <span className={isDark ? "text-slate-700" : "text-neutral-300"}>—</span>}
                         </td>
                         <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => openEditModal(opp)}
-                              className="p-1 px-2 text-xs text-slate-450 hover:text-white bg-slate-800 rounded flex items-center gap-1 transition"
+                              className={`p-1 px-2 text-xs rounded flex items-center gap-1 transition ${theme.bgButtonSec}`}
                               title="Edit Detail"
                             >
                               <Pencil className="w-3 h-3" /> Edit
                             </button>
                             <button
                               onClick={() => handleDelete(opp.id)}
-                              className="p-1 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-slate-850 rounded transition"
+                              className={`p-1 rounded transition ${isDark ? "text-slate-500 hover:text-red-400 bg-slate-800" : "text-neutral-500 hover:text-red-500 bg-neutral-200/55"}`}
                               title="Delete Ledger"
                             >
                               <Trash className="w-3.5 h-3.5" />
@@ -956,90 +1252,90 @@ function setupTrigger() {
           </main>
 
           {/* Right Column: Dynamic Inspector Detail Panel */}
-          <aside className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900/40 p-5 shrink-0" id="detail-panel">
+          <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0`} id="detail-panel">
             {selectedOpp ? (
               <div className="space-y-5" id="detail-card">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-bold text-white tracking-tight">{selectedOpp.companyName}</h3>
-                    <p className="text-xs text-slate-400 font-medium">{selectedOpp.roleTitle}</p>
+                    <h3 className={`text-lg font-bold ${isDark ? "text-white" : "text-[#37352f]"} tracking-tight`}>{selectedOpp.companyName}</h3>
+                    <p className={`text-xs ${theme.textSecondary} font-medium`}>{selectedOpp.roleTitle}</p>
                   </div>
                   <button
                     onClick={() => openEditModal(selectedOpp)}
-                    className="p-1 px-2.5 bg-slate-800 text-[11px] text-slate-300 hover:text-white rounded flex items-center gap-1 transition-all border border-slate-700"
+                    className={`p-1 px-2.5 text-[11px] rounded flex items-center gap-1 transition-all border ${theme.bgButtonSec}`}
                   >
                     Edit fields
                   </button>
                 </div>
 
-                <div className="space-y-4 border-t border-slate-800 pt-4 text-xs">
+                <div className={`space-y-4 border-t ${theme.border} pt-4 text-xs`}>
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Status Transition</label>
                     <select
                       value={selectedOpp.status}
                       onChange={(e) => updateStatus(selectedOpp, e.target.value as OpportunityStatus)}
-                      className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded p-2.5 focus:outline-none font-medium cursor-pointer"
+                      className={`w-full border rounded p-2.5 focus:outline-none font-medium cursor-pointer ${theme.bgInput}`}
                     >
-                      <option value="NEW">NEW</option>
-                      <option value="APPLIED">APPLIED</option>
-                      <option value="ASSESSMENT_PENDING">ASSESSMENT PENDING</option>
-                      <option value="INTERVIEWING">INTERVIEWING</option>
-                      <option value="OFFER">OFFER</option>
-                      <option value="REJECTED">REJECTED</option>
-                      <option value="DORMANT">DORMANT</option>
-                      <option value="ARCHIVED">ARCHIVED</option>
+                      <option value="NEW" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>NEW</option>
+                      <option value="APPLIED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>APPLIED</option>
+                      <option value="ASSESSMENT_PENDING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ASSESSMENT PENDING</option>
+                      <option value="INTERVIEWING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>INTERVIEWING</option>
+                      <option value="OFFER" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>OFFER</option>
+                      <option value="REJECTED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>REJECTED</option>
+                      <option value="DORMANT" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>DORMANT</option>
+                      <option value="ARCHIVED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ARCHIVED</option>
                     </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 font-mono">
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-400 font-mono block mb-1">Priority</label>
+                      <label className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} font-mono block mb-1`}>Priority</label>
                       <select
                         value={selectedOpp.priority}
                         onChange={(e) => updatePriority(selectedOpp, e.target.value as Priority)}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded p-2 focus:outline-none cursor-pointer"
+                        className={`w-full border rounded p-2 focus:outline-none cursor-pointer ${theme.bgInput}`}
                       >
-                        <option value="P0">P0</option>
-                        <option value="P1">P1</option>
-                        <option value="P2">P2</option>
+                        <option value="P0" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P0</option>
+                        <option value="P1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P1</option>
+                        <option value="P2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P2</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-400 font-mono block mb-1">Tier</label>
+                      <label className={`text-[10px] uppercase tracking-wider ${theme.textSecondary} font-mono block mb-1`}>Tier</label>
                       <select
                         value={selectedOpp.tier}
                         onChange={(e) => {
                           const updated: Opportunity = { ...selectedOpp, tier: e.target.value as OpportunityTier, lastActivityDate: "2026-05-24" };
                           setOpportunities(opportunities.map((o) => (o.id === selectedId ? updated : o)));
                         }}
-                        className="w-full bg-slate-950 border border-slate-800 text-slate-200 rounded p-2 focus:outline-none cursor-pointer"
+                        className={`w-full border rounded p-2 focus:outline-none cursor-pointer ${theme.bgInput}`}
                       >
-                        <option value="T1">T1</option>
-                        <option value="T2">T2</option>
-                        <option value="T3">T3</option>
+                        <option value="T1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T1</option>
+                        <option value="T2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T2</option>
+                        <option value="T3" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T3</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-450 font-mono font-bold block mb-1">Source origin</label>
-                      <span className="block p-2 bg-slate-950 rounded text-slate-300 text-xs font-mono">{selectedOpp.source}</span>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Source origin</label>
+                      <span className={`block p-2 rounded text-xs font-mono ${isDark ? "bg-[#252525] text-slate-300" : "bg-[#f1f1ef] text-[#37352f]"}`}>{selectedOpp.source}</span>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-450 font-mono font-bold block mb-1">Category</label>
-                      <span className="block p-2 bg-slate-950 rounded text-slate-300 text-xs truncate">{selectedOpp.category || "Operations"}</span>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Category</label>
+                      <span className={`block p-2 rounded text-xs truncate ${isDark ? "bg-[#252525] text-slate-300" : "bg-[#f1f1ef] text-[#37352f] border border-[#eae9e6]/60"}`}>{selectedOpp.category || "Operations"}</span>
                     </div>
                   </div>
 
                   {selectedOpp.link && (
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-450 font-mono font-bold block mb-1">Target Action Link / Email</label>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Target Action Link / Email</label>
                       <a
                         href={selectedOpp.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between text-blue-400 hover:underline hover:text-blue-300 p-2 bg-slate-950 rounded"
+                        className={`flex items-center justify-between text-blue-500 hover:underline hover:text-blue-600 p-2 rounded ${isDark ? "bg-[#252525]" : "bg-[#f1f1ef]"}`}
                       >
                         <span className="truncate font-mono mr-2">{selectedOpp.link}</span> <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                       </a>
@@ -1048,33 +1344,33 @@ function setupTrigger() {
 
                   <div className="grid grid-cols-2 gap-3 font-mono">
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-450 block mb-1">Date Applied</label>
-                      <span className="block p-2 bg-slate-950 rounded text-slate-300 text-xs">{selectedOpp.dateApplied || "—"}</span>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Date Applied</label>
+                      <span className={`block p-2 rounded text-xs ${isDark ? "bg-[#252525] text-slate-300" : "bg-[#f1f1ef] text-[#37352f]"}`}>{selectedOpp.dateApplied || "—"}</span>
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-wider text-slate-455 block mb-1">Last Updated</label>
-                      <span className="block p-2 bg-slate-950 rounded text-slate-400 text-xs">{selectedOpp.lastActivityDate || "—"}</span>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Last Updated</label>
+                      <span className={`block p-2 rounded text-xs ${isDark ? "bg-[#252525] text-slate-400" : "bg-[#f1f1ef] text-[#787774]"}`}>{selectedOpp.lastActivityDate || "—"}</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase tracking-wider text-slate-450 font-mono font-bold block mb-1">Next Action Date Limit</label>
-                    <span className="block p-2 bg-slate-950 rounded text-slate-300 font-mono text-xs">{selectedOpp.nextActionDate || "No planned action"}</span>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Next Action Date Limit</label>
+                    <span className={`block p-2 rounded font-mono text-xs ${isDark ? "bg-[#252525] text-slate-300" : "bg-[#f1f1ef] text-[#37352f]"}`}>{selectedOpp.nextActionDate || "No planned action"}</span>
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase tracking-wider text-slate-450 font-mono font-bold block mb-1">Notes </label>
-                    <div className="p-3 bg-slate-950 text-slate-350 rounded leading-relaxed whitespace-pre-wrap text-xs max-h-48 overflow-y-auto border border-slate-850">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Notes </label>
+                    <div className={`p-3 rounded leading-relaxed whitespace-pre-wrap text-xs max-h-48 overflow-y-auto border ${isDark ? "bg-[#252525] text-slate-300 border-[#2c2c2c]" : "bg-white text-[#37352f] border-[#eae9e6] shadow-xs"}`}>
                       {selectedOpp.notes || "No outbound notes or logs configured."}
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 text-center py-12">
-                <FileText className="w-8 h-8 mb-2 text-slate-700 animate-pulse" />
-                <p className="text-sm font-medium">No ledger opportunity is selected</p>
-                <p className="text-xs mt-0.5">Click any row in the spreadsheet list to view metadata details</p>
+              <div className={`h-full flex flex-col items-center justify-center ${theme.textSecondary} text-center py-12`}>
+                <FileText className={`w-8 h-8 mb-2 ${isDark ? "text-slate-700" : "text-slate-300"} animate-pulse`} />
+                <p className={`text-sm font-medium ${isDark ? "text-slate-400" : "text-[#37352f]"}`}>No ledger opportunity is selected</p>
+                <p className="text-xs mt-1">Click any row in the spreadsheet list to view metadata details</p>
               </div>
             )}
           </aside>
@@ -1083,27 +1379,27 @@ function setupTrigger() {
 
       {/* 3. TAB 2: Signal Radar & Google Apps Script Setup Panel */}
       {activeTab === "radar" && (
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-950" id="radar-hub">
+        <div className={`flex-1 overflow-y-auto p-6 space-y-8 ${isDark ? "bg-[#191919]" : "bg-white"}`} id="radar-hub">
           
           {/* Conceptual Blueprint Banner */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 p-5 bg-slate-900 border border-slate-800 rounded-lg">
+          <div className={`grid grid-cols-1 lg:grid-cols-4 gap-4 p-5 rounded-lg border ${isDark ? "bg-slate-900/40 border-slate-850" : "bg-[#f7f7f5] border-[#eae9e6]"}`}>
             <div className="lg:col-span-3 space-y-2">
               <div className="flex items-center gap-2">
-                <Radio className="w-5 h-5 text-blue-400 animate-pulse" />
-                <h2 className="text-base font-bold text-white uppercase font-mono tracking-tight">System Radar Architecture</h2>
+                <Radio className={`w-5 h-5 ${isDark ? "text-blue-400" : "text-blue-600"} animate-pulse`} />
+                <h2 className={`text-base font-bold ${isDark ? "text-white" : "text-[#37352f]"} uppercase font-mono tracking-tight`}>System Radar Architecture</h2>
               </div>
-              <p className="text-xs leading-relaxed text-slate-400">
-                Gmail is operated strictly as a <strong className="text-slate-200">Signal Inbox (input-only detector)</strong>. 
+              <p className={`text-xs leading-relaxed ${theme.textSecondary}`}>
+                Gmail is operated strictly as a <strong className={isDark ? "text-slate-200" : "text-[#37352f] font-bold"}>Signal Inbox (input-only detector)</strong>. 
                 Google Sheets serves as your unified database, and the Apps Script automatically runs behind the scenes to sweep Gmail, extracting signals onto Sheets rows. 
                 This React app is the command cockpit to act and make tactical decisions.
               </p>
             </div>
-            <div className="flex flex-col justify-center items-start lg:items-end border-t lg:border-t-0 lg:border-l border-slate-800 pt-3 lg:pt-0 lg:pl-4">
+            <div className={`flex flex-col justify-center items-start lg:items-end border-t lg:border-t-0 lg:border-l ${theme.border} pt-3 lg:pt-0 lg:pl-4`}>
               <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Operational Flow Direction</span>
-              <div className="text-xs font-mono font-bold text-blue-400 mt-1">
+              <div className={`text-xs font-mono font-bold ${isDark ? "text-blue-400" : "text-blue-600"} mt-1`}>
                 Gmail → Script → Sheets → React UI
               </div>
-              <div className="text-[10px] text-slate-500 font-mono leading-tight mt-1 text-left lg:text-right">
+              <div className={`text-[10px] ${theme.textSecondary} font-mono leading-tight mt-1 text-left lg:text-right`}>
                 Correct Version (Zero automation spaghetti)
               </div>
             </div>
@@ -1115,40 +1411,40 @@ function setupTrigger() {
             <div className="xl:col-span-7 space-y-6">
               
               {/* Box A: Un-triaged Gmail Radar Signals Stream */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/20">
-                  <span className="text-xs font-bold font-mono text-white flex items-center gap-2 uppercase">
-                    <Radio className="w-3.5 h-3.5 text-blue-400 animate-pulse" /> 
+              <div className={`border rounded-lg overflow-hidden ${isDark ? "bg-[#202020] border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
+                <div className={`px-4 py-3 border-b flex justify-between items-center ${isDark ? "border-slate-800 bg-[#252525]/50" : "border-[#eae9e6] bg-[#f7f7f5]"}`}>
+                  <span className={`text-xs font-bold font-mono ${isDark ? "text-white" : "text-[#37352f]"} flex items-center gap-2 uppercase`}>
+                    <Radio className={`w-3.5 h-3.5 ${isDark ? "text-blue-400" : "text-blue-600"} animate-pulse`} /> 
                     Live Detected Signals Queue ({radarSignals.length})
                   </span>
-                  <span className="text-[10px] bg-slate-950 border border-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
+                  <span className={`text-[10px] border px-2 py-0.5 rounded font-mono ${isDark ? "bg-[#191919] border-slate-850 text-slate-400" : "bg-[#f1f1ef] border-[#eae9e6] text-[#787774]"}`}>
                     Gmail Scanner Simulator
                   </span>
                 </div>
                 
-                <div className="p-4 space-y-3.5 divide-y divide-slate-800/60 max-h-[300px] overflow-y-auto">
+                <div className={`p-4 space-y-3.5 divide-y ${isDark ? "divide-slate-800/60" : "divide-[#eae9e6]/60"} max-h-[300px] overflow-y-auto`}>
                   {radarSignals.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500 text-xs">
+                    <div className={`text-center py-10 ${theme.textSecondary} text-xs`}>
                       <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                       Radar Queue Cleared. Next hourly Apps Script sweep scheduled.
                     </div>
                   ) : (
                     radarSignals.map((sig, i) => (
-                      <div key={sig.id} className={`pt-3 flex flex-col md:flex-row gap-4 items-start ${i === 0 ? 'pt-0' : ''}`}>
+                      <div key={sig.id} className={`pt-3 flex flex-col md:flex-row gap-4 items-start ${i === 0 ? "pt-0" : ""}`}>
                         <div className="flex-1 space-y-1 text-xs">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-slate-200 font-mono">{sig.detectedCompany}</span>
-                            <span className="text-slate-500 font-mono">({sig.sender})</span>
+                            <span className={`font-bold ${isDark ? "text-slate-200" : "text-[#37352f]"} font-mono`}>{sig.detectedCompany}</span>
+                            <span className={`font-mono ${theme.textSecondary}`}>({sig.sender})</span>
                             <span className={`text-[9px] font-mono px-2 py-0.5 rounded ${
-                              sig.detectedStatus === "ASSESSMENT_PENDING" ? "bg-amber-500/10 text-amber-300 border border-amber-500/30" :
-                              sig.detectedStatus === "INTERVIEWING" ? "bg-blue-500/10 text-blue-300 border border-blue-500/30" :
-                              "bg-slate-800 text-slate-350"
+                              sig.detectedStatus === "ASSESSMENT_PENDING" ? "bg-amber-500/10 text-amber-500 border border-amber-500/30" :
+                              sig.detectedStatus === "INTERVIEWING" ? "bg-blue-500/10 text-blue-500 border border-blue-500/30" :
+                              (isDark ? "bg-slate-800 text-slate-350" : "bg-[#f1f1ef] text-[#787774]")
                             }`}>
                               {sig.detectedStatus}
                             </span>
                           </div>
-                          <div className="text-slate-100 font-semibold">{sig.subject}</div>
-                          <p className="text-slate-400 leading-relaxed text-[11px] font-sans">{sig.snippet}</p>
+                          <div className={`font-semibold ${isDark ? "text-slate-100" : "text-[#37352f]"}`}>{sig.subject}</div>
+                          <p className={`leading-relaxed text-[11px] font-sans ${theme.textSecondary}`}>{sig.snippet}</p>
                         </div>
                         <div className="shrink-0 flex gap-2 w-full md:w-auto mt-2 md:mt-0">
                           <button
@@ -1159,7 +1455,7 @@ function setupTrigger() {
                           </button>
                           <button
                             onClick={() => setRadarSignals(radarSignals.filter((item) => item.id !== sig.id))}
-                            className="bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-2.5 py-1.5 rounded text-xs transition font-mono"
+                            className={`px-2.5 py-1.5 rounded text-xs font-mono transition ${theme.bgButtonSec}`}
                           >
                             Dismiss
                           </button>
@@ -1171,12 +1467,12 @@ function setupTrigger() {
               </div>
 
               {/* Box B: Dynamic Email Body Raw Content Parser Test Sandbox */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4">
+              <div className={`border rounded-lg p-5 space-y-4 ${isDark ? "bg-[#202020] border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
                 <div className="flex items-center gap-1.5">
-                  <Code className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-xs font-bold text-white uppercase font-mono tracking-tight">Signal Parser Sandbox</h3>
+                  <Code className={`w-4 h-4 ${isDark ? "text-emerald-400" : "text-emerald-600"}`} />
+                  <h3 className={`text-xs font-bold ${isDark ? "text-white" : "text-[#37352f]"} uppercase font-mono tracking-tight`}>Signal Parser Sandbox</h3>
                 </div>
-                <p className="text-xs text-slate-400 leading-normal">
+                <p className={`text-xs ${theme.textSecondary} leading-normal`}>
                   Test your Gmail sweep automation parsing criteria immediately. Paste a raw message or confirmation snippet from your target to review instant status mapping.
                 </p>
 
@@ -1186,39 +1482,39 @@ function setupTrigger() {
                     value={sandboxEmailText}
                     onChange={(e) => setSandboxEmailText(e.target.value)}
                     placeholder="Example: We received your application at Stripe for the High-Leverage Scaling Consigliere role..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-sans leading-relaxed"
+                    className={`w-full border rounded p-2.5 text-xs focus:outline-none focus:border-blue-500 font-sans leading-relaxed ${theme.bgInput}`}
                   />
                   <div className="flex justify-between items-center">
-                    <div className="text-[10px] text-slate-500 font-mono">
+                    <div className={`text-[10px] ${theme.textSecondary} font-mono`}>
                       Mapping: Applied confirm → applied, Schedule calendars → interviewing, exercise → assessment
                     </div>
                     <button
                       type="button"
                       onClick={executeSandboxParse}
                       disabled={!sandboxEmailText.trim()}
-                      className="bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs px-3.5 py-1.5 rounded font-mono transition"
+                      className={`text-xs px-3.5 py-1.5 rounded border font-mono transition ${theme.bgButtonSec}`}
                     >
-                      Process Signal Input
+                      Process Input
                     </button>
                   </div>
                 </div>
 
                 {isSandboxParsed && (
-                  <div className="p-4 bg-slate-950 border border-slate-850 rounded-lg grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  <div className={`p-4 border rounded-lg grid grid-cols-2 md:grid-cols-3 gap-4 text-xs ${isDark ? "bg-slate-950/80 border-slate-850" : "bg-[#f7f7f5] border-[#eae9e6]"}`}>
                     <div>
-                      <span className="text-[10px] font-mono text-slate-500 block uppercase mb-1">Extracted Company</span>
-                      <strong className="text-slate-100 font-mono">{sandboxExtractedCompany}</strong>
+                      <span className={`text-[10px] font-mono ${theme.textSecondary} block uppercase mb-1`}>Extracted Company</span>
+                      <strong className={`font-mono ${isDark ? "text-slate-100" : "text-[#37352f]"}`}>{sandboxExtractedCompany}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono text-slate-500 block uppercase mb-1">Target Role Target</span>
-                      <strong className="text-slate-100 font-mono">{sandboxExtractedRole}</strong>
+                      <span className={`text-[10px] font-mono ${theme.textSecondary} block uppercase mb-1`}>Target Role Target</span>
+                      <strong className={`font-mono ${isDark ? "text-slate-100" : "text-[#37352f]"}`}>{sandboxExtractedRole}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono text-slate-500 block uppercase mb-1">Detected Status Map</span>
-                      <strong className="text-blue-400 font-mono">{sandboxExtractedStatus}</strong>
+                      <span className={`text-[10px] font-mono ${theme.textSecondary} block uppercase mb-1`}>Detected Status Map</span>
+                      <strong className={`font-mono ${isDark ? "text-blue-400" : "text-blue-600"}`}>{sandboxExtractedStatus}</strong>
                     </div>
-                    <div className="col-span-full pt-2 border-t border-slate-850 flex justify-between items-center">
-                      <span className="text-[11px] text-slate-400 italic">Looks correct? Insert directly, bypass spreadsheet ledger update?</span>
+                    <div className={`col-span-full pt-2 border-t flex justify-between items-center ${isDark ? "border-slate-850" : "border-[#eae9e6]"}`}>
+                      <span className={`text-[11px] ${theme.textSecondary} italic`}>Looks correct? Insert directly, bypass spreadsheet ledger update?</span>
                       <button
                         onClick={() => {
                           const customOpp: Opportunity = {
@@ -1238,9 +1534,8 @@ function setupTrigger() {
                           setSelectedId(customOpp.id);
                           setSandboxEmailText("");
                           setIsSandboxParsed(false);
-                          alert(`Successfully loaded ${sandboxExtractedCompany} into core Ledger.`);
                         }}
-                        className="bg-blue-600/20 hover:bg-blue-650 text-blue-400 hover:text-blue-300 text-xs px-3 py-1 rounded font-mono transition border border-blue-500/30"
+                        className={`text-xs px-3 py-1 rounded font-mono transition border ${isDark ? "bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border-blue-500/30" : "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"}`}
                       >
                         Approve & Sync Core
                       </button>
@@ -1253,68 +1548,158 @@ function setupTrigger() {
             {/* Right Box: Setup Blueprint Guide & Apps Script Code copy (5 cols) */}
             <div className="xl:col-span-5 space-y-6">
               
+              {/* Deployed Web App Connection Cockpit */}
+              <div className={`border rounded-lg p-5 space-y-4 ${isDark ? "bg-[#202020] border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <Database className={`w-4 h-4 ${isDark ? "text-emerald-400" : "text-emerald-600"}`} />
+                    <h3 className={`text-xs font-bold uppercase font-mono tracking-tight truncate ${isDark ? "text-white" : "text-[#37352f]"}`}>
+                      Live Production Connector
+                    </h3>
+                  </div>
+                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                    connectionStatus === "success" 
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" 
+                      : connectionStatus === "error"
+                      ? "bg-rose-500/10 text-rose-500 border-rose-500/30"
+                      : "bg-neutral-500/10 text-neutral-500 border-neutral-500/30"
+                  }`}>
+                    {connectionStatus === "success" ? "CONNECTED" : connectionStatus === "error" ? "SYNC_FAIL" : "OFFLINE_DEMO"}
+                  </span>
+                </div>
+
+                <p className={`text-xs leading-relaxed ${theme.textSecondary}`}>
+                  Connect your deployed Google Apps Script Web App URL to link this React cockpit live with your Google Sheets DB and active Gmail scanner.
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className={`text-[10px] uppercase font-mono ${theme.textSecondary} block mb-1 font-semibold`}>
+                      Apps Script Web App URL
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={appsScriptUrl}
+                        onChange={(e) => setAppsScriptUrl(e.target.value)}
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        className={`font-mono text-xs flex-1 border rounded p-2 focus:outline-none focus:border-blue-500 ${theme.bgInput}`}
+                      />
+                      <button
+                        onClick={() => handleConnectAppsScript(appsScriptUrl)}
+                        disabled={isConnecting || !appsScriptUrl.trim()}
+                        className={`px-3 py-2 rounded text-xs select-none flex items-center gap-1 font-mono transition border ${
+                          isConnecting 
+                            ? "opacity-50 cursor-not-allowed" 
+                            : isDark ? "bg-blue-600 hover:bg-blue-500 text-white border-blue-600" : "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                        }`}
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isConnecting ? "animate-spin" : ""}`} />
+                        Connect
+                      </button>
+                    </div>
+                  </div>
+
+                  {connectionError && (
+                    <div className="p-2.5 rounded text-[11px] font-mono bg-rose-500/10 text-rose-500 border border-rose-500/20 leading-relaxed max-h-32 overflow-y-auto">
+                      <strong>Deployment Error:</strong> {connectionError}
+                    </div>
+                  )}
+
+                  {connectionStatus === "success" && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={triggerLiveScan}
+                        disabled={isConnecting}
+                        className={`w-full py-2.5 px-3 rounded text-xs font-mono font-bold transition border flex items-center justify-center gap-1.5 shadow-xs ${
+                          isConnecting 
+                            ? "opacity-50 cursor-not-allowed" 
+                            : isDark ? "bg-slate-900 border-slate-750 text-[#34d399] hover:bg-slate-850 hover:text-emerald-305" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300"
+                        }`}
+                        title="Command Google Apps Script to run scanGmailSignals() live and fetch updated data"
+                      >
+                        <Radio className={`w-3.5 h-3.5 ${isConnecting ? "animate-pulse text-emerald-450" : "text-emerald-500"}`} />
+                        Trigger Gmail Sweep
+                      </button>
+                      <button
+                        onClick={pushLedgerToSheets}
+                        disabled={isConnecting}
+                        className={`w-full py-2.5 px-3 rounded text-xs font-mono font-bold transition border flex items-center justify-center gap-1.5 shadow-xs ${
+                          isConnecting 
+                            ? "opacity-50 cursor-not-allowed" 
+                            : `${theme.bgButtonSec} hover:text-blue-500`
+                        }`}
+                        title="Overwrite your active Google Sheets data with the current local React client state"
+                      >
+                        <Send className="w-3.5 h-3.5 text-blue-500" />
+                        Push Local to Sheets
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Setup steps list */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4">
+              <div className={`border rounded-lg p-5 space-y-4 ${isDark ? "bg-[#202020] border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
                 <div className="flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-xs font-bold text-white uppercase font-mono tracking-tight">Active Pipe Quick Setup</h3>
+                  <Layers className={`w-4 h-4 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+                  <h3 className={`text-xs font-bold ${isDark ? "text-white" : "text-[#37352f]"} uppercase font-mono tracking-tight`}>Active Pipe Quick Setup</h3>
                 </div>
                 
-                <ol className="text-xs text-slate-400 space-y-3 pl-4 list-decimal leading-relaxed">
+                <ol className={`text-xs ${theme.textSecondary} space-y-3 pl-4 list-decimal leading-relaxed`}>
                   <li>
-                    Create a clean <strong className="text-slate-200">Google Sheets spreadsheet</strong>. Rename your target tab to <code className="bg-slate-950 font-mono px-1 border border-slate-850">Sheet1</code>.
+                    Create a clean <strong className={isDark ? "text-slate-200" : "text-[#37352f] font-bold"}>Google Sheets spreadsheet</strong>. Rename your target tab to <code className={`font-mono px-1 border rounded ${isDark ? "bg-slate-950 border-slate-850" : "bg-neutral-100 border-neutral-200 text-neutral-800"}`}>Sheet1</code>.
                   </li>
                   <li>
-                    Select <strong className="text-slate-200">Extensions &gt; Apps Script</strong> at the top bar.
+                    Select <strong className={isDark ? "text-slate-200" : "text-[#37352f] font-bold"}>Extensions &gt; Apps Script</strong> at the top bar.
                   </li>
                   <li>
                     Delete all existing default content inside the editor and paste the compiled Apps Script source code.
                   </li>
                   <li>
-                    Click <strong className="text-slate-200">Save</strong>. Highlight and run function <code className="bg-slate-950 font-mono px-1 text-slate-300">setupTrigger()</code> representing hourly automated scans!
+                    Click <strong className={isDark ? "text-slate-200" : "text-[#37352f] font-bold"}>Save</strong>. Highlight and run function <code className={`font-mono px-1 rounded ${isDark ? "bg-slate-950 text-slate-300" : "bg-neutral-100 border border-neutral-200 text-neutral-800"}`}>setupTrigger()</code> representing hourly automated scans!
                   </li>
                 </ol>
                 
-                <p className="text-[11px] text-slate-500 leading-normal">
+                <p className="text-[11px] text-[#787774] leading-normal font-mono">
                   Because Gmail maps purely to Sheets rows, this prevents CRM tagging explosions, and protects operational state integrity. That is why this setup works long-term.
                 </p>
               </div>
 
               {/* Source Code Container */}
-              <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col max-h-[440px]">
-                <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/20 flex justify-between items-center font-mono">
-                  <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                    <Code className="w-3.5 h-3.5 text-blue-400" />
+              <div className={`border rounded-lg overflow-hidden flex flex-col max-h-[440px] ${isDark ? "bg-[#202020] border-slate-800" : "bg-white border-[#eae9e6] shadow-xs"}`}>
+                <div className={`px-4 py-3 border-b flex justify-between items-center font-mono ${isDark ? "border-slate-800 bg-[#252525]/50" : "border-[#eae9e6] bg-[#f7f7f5]"}`}>
+                  <span className={`text-[11px] font-bold flex items-center gap-1.5 ${isDark ? "text-slate-300" : "text-[#37352f]"}`}>
+                    <Code className={`w-3.5 h-3.5 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
                     Google Apps Script Code
                   </span>
                   <button
                     onClick={handleCopyCode}
-                    className="text-[10px] text-blue-400 hover:text-blue-300 underline font-medium cursor-pointer"
+                    className={`text-[10px] underline font-medium cursor-pointer ${isDark ? "text-blue-400 hover:text-blue-300" : "text-blue-600 hover:text-blue-700"}`}
                   >
                     {hasCopiedCode ? "Copied!" : "Copy Code"}
                   </button>
                 </div>
-                <div className="bg-slate-950 p-4 overflow-y-auto flex-1 font-mono text-[10px] text-slate-300 space-y-1 select-all scrollbar-thin">
-                  <pre className="whitespace-pre">{getAppsScriptCode()}</pre>
+                <div className={`p-4 overflow-y-auto flex-1 font-mono text-[10px] text-slate-300 space-y-1 select-all scrollbar-thin ${isDark ? "bg-slate-950" : "bg-[#f7f7f5]"}`}>
+                  <pre className={`whitespace-pre ${isDark ? "text-slate-300" : "text-[#37352f]"}`}>{getAppsScriptCode()}</pre>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* 4. Core Opportunity Form Modal */}
+         {/* 4. Core Opportunity Form Modal */}
       {modalMode !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs" onClick={() => setModalMode(null)} />
-          <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-5 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/20">
-              <h3 className="text-xs font-bold text-white uppercase font-mono tracking-tight">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setModalMode(null)} />
+          <div className={`relative w-full max-w-lg rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border ${isDark ? "bg-[#202020] border-[#2c2c2c]" : "bg-white border-[#eae9e6]"}`}>
+            <div className={`px-5 py-4 border-b flex justify-between items-center ${isDark ? "border-slate-850 bg-[#252525]/50" : "border-[#eae9e6] bg-[#f7f7f5]"}`}>
+              <h3 className={`text-xs font-bold uppercase font-mono tracking-tight ${isDark ? "text-white" : "text-[#37352f]"}`}>
                 {modalMode === "ADD" ? "Create New Opportunity" : "Modify Opportunity details"}
               </h3>
               <button
                 onClick={() => setModalMode(null)}
-                className="p-1 hover:bg-slate-850 rounded text-slate-450 hover:text-white"
+                className={`p-1 rounded transition ${isDark ? "hover:bg-slate-850 text-slate-400 hover:text-white" : "hover:bg-neutral-200 text-[#787774] hover:text-black"}`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1323,144 +1708,144 @@ function setupTrigger() {
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs font-sans">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-400 block mb-1">Company Name *</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Company Name *</label>
                   <input
                     type="text"
                     required
                     value={formCompany}
                     onChange={(e) => setFormCompany(e.target.value)}
                     placeholder="e.g. Acme Corp"
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none focus:border-blue-500"
+                    className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 font-sans ${theme.bgInput}`}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-400 block mb-1">Role Title *</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Role Title *</label>
                   <input
                     type="text"
                     required
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value)}
                     placeholder="e.g. Lead Revenue Builder"
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none focus:border-blue-500"
+                    className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 font-sans ${theme.bgInput}`}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Source</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Source</label>
                   <select
                     value={formSource}
                     onChange={(e) => setFormSource(e.target.value as Opportunity["source"])}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-slate-200 focus:outline-none cursor-pointer"
+                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer ${theme.bgInput}`}
                   >
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="OLJ">OLJ</option>
-                    <option value="Direct">Direct</option>
-                    <option value="Referral">Referral</option>
-                    <option value="Funnel">Funnel</option>
-                    <option value="Gmail">Gmail</option>
+                    <option value="LinkedIn" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>LinkedIn</option>
+                    <option value="OLJ" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>OLJ</option>
+                    <option value="Direct" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>Direct</option>
+                    <option value="Referral" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>Referral</option>
+                    <option value="Funnel" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>Funnel</option>
+                    <option value="Gmail" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>Gmail</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Tier</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Tier</label>
                   <select
                     value={formTier}
                     onChange={(e) => setFormTier(e.target.value as OpportunityTier)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-slate-200 focus:outline-none cursor-pointer font-mono"
+                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono ${theme.bgInput}`}
                   >
-                    <option value="T1">T1</option>
-                    <option value="T2">T2</option>
-                    <option value="T3">T3</option>
+                    <option value="T1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T1</option>
+                    <option value="T2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T2</option>
+                    <option value="T3" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>T3</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Category</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Category</label>
                   <input
                     type="text"
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
                     placeholder="e.g. AI Strategy"
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none focus:border-blue-500"
+                    className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 font-sans ${theme.bgInput}`}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Status</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Status</label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as OpportunityStatus)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-slate-200 focus:outline-none cursor-pointer font-mono"
+                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono ${theme.bgInput}`}
                   >
-                    <option value="NEW">NEW</option>
-                    <option value="APPLIED">APPLIED</option>
-                    <option value="ASSESSMENT_PENDING">ASSESSMENT</option>
-                    <option value="INTERVIEWING">INTERVIEWING</option>
-                    <option value="OFFER">OFFER</option>
-                    <option value="REJECTED">REJECTED</option>
-                    <option value="DORMANT">DORMANT</option>
-                    <option value="ARCHIVED">ARCHIVED</option>
+                    <option value="NEW" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>NEW</option>
+                    <option value="APPLIED" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>APPLIED</option>
+                    <option value="ASSESSMENT_PENDING" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>ASSESSMENT</option>
+                    <option value="INTERVIEWING" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>INTERVIEWING</option>
+                    <option value="OFFER" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>OFFER</option>
+                    <option value="REJECTED" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>REJECTED</option>
+                    <option value="DORMANT" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>DORMANT</option>
+                    <option value="ARCHIVED" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>ARCHIVED</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Priority</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Priority</label>
                   <select
                     value={formPriority}
                     onChange={(e) => setFormPriority(e.target.value as Priority)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-slate-200 focus:outline-none cursor-pointer font-mono font-bold"
+                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono font-bold ${theme.bgInput}`}
                   >
-                    <option value="P0">P0</option>
-                    <option value="P1">P1</option>
-                    <option value="P2">P2</option>
+                    <option value="P0" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P0</option>
+                    <option value="P1" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P1</option>
+                    <option value="P2" className={isDark ? "bg-[#202020]" : "bg-white text-black"}>P2</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Applied Date</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Applied Date</label>
                   <input
                     type="date"
                     value={formDateApplied}
                     onChange={(e) => setFormDateApplied(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none font-mono text-xs"
+                    className={`w-full border rounded p-2.5 focus:outline-none font-mono text-xs ${theme.bgInput}`}
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-400 block mb-1">Next Action Date Limit</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Next Action Date Limit</label>
                   <input
                     type="date"
                     value={formNextActionDate}
                     onChange={(e) => setFormNextActionDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none font-mono text-xs"
+                    className={`w-full border rounded p-2.5 focus:outline-none font-mono text-xs ${theme.bgInput}`}
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-400 block mb-1">Outreach URL Link</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Outreach URL Link</label>
                   <input
                     type="url"
                     value={formLink}
                     onChange={(e) => setFormLink(e.target.value)}
                     placeholder="https://"
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none focus:border-blue-500 font-mono"
+                    className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 font-mono ${theme.bgInput}`}
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-slate-400 block mb-1">Dossier Notes</label>
+                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Dossier Notes</label>
                   <textarea
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
                     rows={4}
                     placeholder="Opportunity notes and outreach checklist details"
-                    className="w-full bg-slate-950 border border-slate-800 rounded p-2.5 text-white focus:outline-none focus:border-blue-500 text-xs"
+                    className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 text-xs ${theme.bgInput}`}
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800 font-mono">
+              <div className={`flex justify-end gap-3 pt-4 border-t font-mono ${isDark ? "border-slate-850" : "border-[#eae9e6]"}`}>
                 <button
                   type="button"
                   onClick={() => setModalMode(null)}
-                  className="px-4 py-2 border border-slate-800 hover:bg-slate-850 rounded text-slate-400 hover:text-white text-xs transition transition duration"
+                  className={`px-4 py-2 rounded text-xs transition font-mono ${theme.bgButtonSec}`}
                 >
                   Cancel
                 </button>

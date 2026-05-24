@@ -21,6 +21,12 @@ ScaleSmart OS operates on a clean, single-direction pipeline that prevents over-
 
 ## ⚡ Key System Features (v1.0 Core)
 
+### 🎨 Notion-Inspired Dark & Light Themes
+Includes a dedicated, persistent theme toggle with a customizable palette replicating the Notion aesthetic across both tabs:
+* **Light Mode**: Mimics the warm, clean paper-like background (`#ffffff`, `#f7f7f5`, `#eae9e6`) with deep charcoal text (`#37352f`).
+* **Dark Mode**: Replicates the clean obsidian tones (`#191919`, `#202020`) with soft slate typography.
+* **Dual Persistence**: Theme preference is automatically sync'd and persisted via standard client-side `localStorage`.
+
 ### 📈 Interactive Column Sorting
 The central cockpit table offers immediate high-performance sorting. Click any header indicator:
 * **Company Name** (Alphabetical order)
