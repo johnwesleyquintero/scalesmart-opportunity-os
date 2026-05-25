@@ -835,7 +835,11 @@ export default function App() {
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
       {/* 1. Global Header Bar */}
       <header className={`h-11 border-b flex items-center justify-between px-4 z-40 select-none sticky top-0 ${theme.bgHeader}`}>
-        <div className="flex items-center gap-2">
+        <div 
+          onClick={() => setIsLeftSidebarOpen((prev) => !prev)}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition active:scale-[0.98] select-none"
+          title="Toggle Left Sidebar"
+        >
           <Layers className={`w-4 h-4 ${isDark ? "text-cyan-400 animate-pulse" : "text-blue-500"}`} />
           <h1 className="text-xs font-black uppercase tracking-widest font-mono">
             Scalesmart <span className={theme.accentBlue}>OS</span>
