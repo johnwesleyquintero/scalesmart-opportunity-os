@@ -40,15 +40,17 @@ Enables founders to prioritize leads organically based on touch-points, intuitio
 * **Smart Sorting Override**: Drag actions temporarily release formal column sort locks to maintain your custom sequence immediately.
 * **Automated Synchronicity**: Automatically synchronizes your customized order back to the Google Sheets spreadsheet DB via Apps Script (`sync_all`) and keeps state preserved in local client storage.
 
-### 📊 Optimized High-Density Display
+### 📊 Optimized High-Density Display & Fluid Workspace UX
 Engineered for rapid outbound tracking and low-friction visual inspections:
 * **Low Padding Cells**: Compressed margins and padding height (`py-1` and clean alignments) to display a larger volume of opportunities at a single glance.
-* **Unified Workspace Header**: A polished navigation ribbon featuring a real-time system activity pulse, combined inline search fields with search-prep icons, and intuitive viewport drawers toggle buttons.
+* **Unified Workspace Header & Navigation**: A polished navigation ribbon featuring a real-time system activity pulse, combined inline search fields with search-prep icons.
+* **Header Branding Toggle**: Clicking the logo and branding title inside the workspace header bar instantly expands or collapses the Left Navigation Sidebar.
+* **Spreadsheet Row Double-Click**: Speed up your workflow by double-clicking any spreadsheet row in the Central Cockpit, which immediately opens the right-sidebar **Opportunity Inspector Panel** for details.
 
 ### 📈 Interactive Column Sorting
 The central cockpit table offers immediate high-performance sorting. Click any header indicator:
 * **Company Name** (Alphabetical order)
-* **Outbound Tier** (T1 ➔ T2 ➔ T3 priority groups)
+* **Outbound Tier** (T1 Systems/Architect level highest ➔ T2 Specialist ➔ T3 Execution level)
 * **Integration Source** (Manual vs Automated Gmail signals)
 * **Pipeline Status** (Outbound stage alignment)
 * **Priority Level** (P0 ➔ P1 ➔ P2 high-stress triage)
