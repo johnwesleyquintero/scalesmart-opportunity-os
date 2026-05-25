@@ -1088,7 +1088,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Stacked visual status indicator profile */}
+                {/* Stacked visual status indicator profile with Daily Quota Stats */}
                 {opportunities.length > 0 && (() => {
                   const totalOppsCount = opportunities.length || 1;
                   const countByStatus = (status: OpportunityStatus) => opportunities.filter(o => o.status === status).length;
@@ -1101,108 +1101,174 @@ export default function App() {
                   const pctRejected = (countByStatus("REJECTED") / totalOppsCount) * 100;
                   const pctDormant = ((countByStatus("DORMANT") + countByStatus("ARCHIVED")) / totalOppsCount) * 100;
 
+                  // Use real current date
+                  const todayStr = new Date().toISOString().split("T")[0];
+                  // Let's count items that have dateApplied === todayStr AND status is not NEW
+                  const workedToday = opportunities.filter(o => 
+                    o.dateApplied === todayStr && 
+                    ["APPLIED", "INTERVIEWING", "OFFER", "REJECTED", "ASSESSMENT_PENDING"].includes(o.status)
+                  );
+                  const appliedTodayCount = workedToday.length;
+                  const quotaMet = appliedTodayCount >= 3;
+
+                  let quotaMessage = "Start your high-leverage outreach routine! (Target: 3/day)";
+                  if (appliedTodayCount === 1) quotaMessage = "1 secured, 2 more to crush today's run-rate!";
+                  if (appliedTodayCount === 2) quotaMessage = "Almost at the target streak! Send 1 more optimization blueprint.";
+                  if (appliedTodayCount >= 3) quotaMessage = "Daily Quota Secured! Perfect consistency.";
+
                   return (
-                    <div className={`mb-6 p-4 rounded-lg border ${theme.bgCard} flex flex-col gap-2.5`}>
-                      <div className="flex justify-between items-center text-[10px] font-mono leading-none">
-                        <span className={`font-bold ${isDark ? "text-slate-300" : "text-[#37352f]"}`}>PIPELINE DISTRIBUTION PROFILE</span>
-                        <span className={`text-[9px] ${theme.textSecondary}`}>Hover blocks for active headcounts</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      {/* Operational Quota Tracker Panel */}
+                      <div className={`p-4 rounded-lg border ${theme.bgCard} flex flex-col justify-between ${isDark ? "border-slate-800" : "border-neutral-250/50"}`}>
+                        <div className="flex justify-between items-start">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-mono font-bold tracking-wider text-slate-500 uppercase">
+                              🎯 DAILY RUN-RATE OUTREACH
+                            </span>
+                            <span className={`text-xs ${theme.textPrimary} font-bold leading-tight`}>
+                              {quotaMet ? "🚀 Daily Target Secured" : "⚡ Pipeline Quota"}
+                            </span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase select-none ${
+                            quotaMet 
+                              ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20" 
+                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/10"
+                          }`}>
+                            {appliedTodayCount >= 3 ? "Achieved" : `${3 - appliedTodayCount} remaining`}
+                          </span>
+                        </div>
+
+                        <div className="my-3">
+                          <div className="flex justify-between items-end mb-1">
+                            <span className={`text-[19px] font-mono font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
+                              {appliedTodayCount} <span className="text-xs text-slate-500">/ 3 applications</span>
+                            </span>
+                            <span className="text-[10.5px] font-mono text-slate-400">
+                              {Math.round(Math.min((appliedTodayCount / 3) * 100, 100))}%
+                            </span>
+                          </div>
+                          
+                          {/* Progress Gauge */}
+                          <div className="h-2 rounded-full w-full bg-slate-800/10 dark:bg-slate-800 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                quotaMet 
+                                  ? "bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_8px_rgba(16,185,129,0.3)]" 
+                                  : "bg-gradient-to-r from-amber-500 to-amber-400"
+                              }`}
+                              style={{ width: `${Math.min((appliedTodayCount / 3) * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <p className={`text-[10.5px] leading-relaxed select-none ${theme.textSecondary}`}>
+                          {quotaMessage}
+                        </p>
                       </div>
-                      <div className="h-2 rounded-full overflow-hidden w-full flex bg-slate-800/10 dark:bg-slate-800">
-                        {pctNew > 0 && (
-                          <div 
-                            style={{ width: `${pctNew}%` }} 
-                            className="bg-slate-400 dark:bg-slate-500 transition-all cursor-help"
-                            title={`NEW: ${countByStatus("NEW")} record(s) (${Math.round(pctNew)}%)`}
-                          />
-                        )}
-                        {pctApplied > 0 && (
-                          <div 
-                            style={{ width: `${pctApplied}%` }} 
-                            className="bg-indigo-500 transition-all cursor-help"
-                            title={`APPLIED: ${countByStatus("APPLIED")} record(s) (${Math.round(pctApplied)}%)`}
-                          />
-                        )}
-                        {pctAssessment > 0 && (
-                          <div 
-                            style={{ width: `${pctAssessment}%` }} 
-                            className="bg-amber-500 transition-all cursor-help"
-                            title={`ASSESSMENT: ${countByStatus("ASSESSMENT_PENDING")} record(s) (${Math.round(pctAssessment)}%)`}
-                          />
-                        )}
-                        {pctInterview > 0 && (
-                          <div 
-                            style={{ width: `${pctInterview}%` }} 
-                            className="bg-sky-500 transition-all cursor-help"
-                            title={`INTERVIEWING: ${countByStatus("INTERVIEWING")} record(s) (${Math.round(pctInterview)}%)`}
-                          />
-                        )}
-                        {pctOffer > 0 && (
-                          <div 
-                            style={{ width: `${pctOffer}%` }} 
-                            className="bg-emerald-500 transition-all cursor-help"
-                            title={`OFFER: ${countByStatus("OFFER")} record(s) (${Math.round(pctOffer)}%)`}
-                          />
-                        )}
-                        {pctRejected > 0 && (
-                          <div 
-                            style={{ width: `${pctRejected}%` }} 
-                            className="bg-rose-500 transition-all cursor-help"
-                            title={`REJECTED: ${countByStatus("REJECTED")} record(s) (${Math.round(pctRejected)}%)`}
-                          />
-                        )}
-                        {pctDormant > 0 && (
-                          <div 
-                            style={{ width: `${pctDormant}%` }} 
-                            className="bg-zinc-450 dark:bg-zinc-600 transition-all cursor-help"
-                            title={`ARCHIVES: ${countByStatus("DORMANT") + countByStatus("ARCHIVED")} record(s) (${Math.round(pctDormant)}%)`}
-                          />
-                        )}
-                      </div>
-                      
-                      {/* Grid Legends */}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] font-mono opacity-80 mt-0.5">
-                        {countByStatus("NEW") > 0 && (
-                          <div className="flex items-center gap-1" title="New records to evaluate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 inline-block" />
-                            <span>NEW ({countByStatus("NEW")})</span>
-                          </div>
-                        )}
-                        {countByStatus("APPLIED") > 0 && (
-                          <div className="flex items-center gap-1" title="Outreach applied leads">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-505 inline-block" />
-                            <span>APPLIED ({countByStatus("APPLIED")})</span>
-                          </div>
-                        )}
-                        {countByStatus("ASSESSMENT_PENDING") > 0 && (
-                          <div className="flex items-center gap-1" title="Tests or takehome exercises pending">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
-                            <span>ASSESSMENT ({countByStatus("ASSESSMENT_PENDING")})</span>
-                          </div>
-                        )}
-                        {countByStatus("INTERVIEWING") > 0 && (
-                          <div className="flex items-center gap-1" title="Currently speaking with company loops">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-505 inline-block" />
-                            <span>INTERVIEWING ({countByStatus("INTERVIEWING")})</span>
-                          </div>
-                        )}
-                        {countByStatus("OFFER") > 0 && (
-                          <div className="flex items-center gap-1" title="Successful Job / Project bids offered!">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                            <span className="font-bold text-emerald-500">OFFER ({countByStatus("OFFER")})</span>
-                          </div>
-                        )}
-                        {countByStatus("REJECTED") > 0 && (
-                          <div className="flex items-center gap-1" title="Unmatched applications">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
-                            <span>REJECTED ({countByStatus("REJECTED")})</span>
-                          </div>
-                        )}
-                        {countByStatus("DORMANT") + countByStatus("ARCHIVED") > 0 && (
-                          <div className="flex items-center gap-1" title="Archived, dormant, or paused leads">
-                            <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 inline-block" />
-                            <span>ARCHIVES ({countByStatus("DORMANT") + countByStatus("ARCHIVED")})</span>
-                          </div>
-                        )}
+
+                      {/* Pipeline Distribution Profile */}
+                      <div className={`p-4 rounded-lg border ${theme.bgCard} md:col-span-2 flex flex-col justify-between gap-2.5 ${isDark ? "border-slate-800" : "border-neutral-250/50"}`}>
+                        <div className="flex justify-between items-center text-[10px] font-mono leading-none">
+                          <span className={`font-bold ${isDark ? "text-slate-300" : "text-[#37352f]"}`}>PIPELINE DISTRIBUTION PROFILE</span>
+                          <span className={`text-[9px] ${theme.textSecondary}`}>Hover blocks for active headcounts</span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden w-full flex bg-slate-800/10 dark:bg-slate-800">
+                          {pctNew > 0 && (
+                            <div 
+                              style={{ width: `${pctNew}%` }} 
+                              className="bg-slate-400 dark:bg-slate-500 transition-all cursor-help"
+                              title={`NEW: ${countByStatus("NEW")} record(s) (${Math.round(pctNew)}%)`}
+                            />
+                          )}
+                          {pctApplied > 0 && (
+                            <div 
+                              style={{ width: `${pctApplied}%` }} 
+                              className="bg-indigo-500 transition-all cursor-help"
+                              title={`APPLIED: ${countByStatus("APPLIED")} record(s) (${Math.round(pctApplied)}%)`}
+                            />
+                          )}
+                          {pctAssessment > 0 && (
+                            <div 
+                              style={{ width: `${pctAssessment}%` }} 
+                              className="bg-amber-500 transition-all cursor-help"
+                              title={`ASSESSMENT: ${countByStatus("ASSESSMENT_PENDING")} record(s) (${Math.round(pctAssessment)}%)`}
+                            />
+                          )}
+                          {pctInterview > 0 && (
+                            <div 
+                              style={{ width: `${pctInterview}%` }} 
+                              className="bg-sky-505 transition-all cursor-help"
+                              title={`INTERVIEWING: ${countByStatus("INTERVIEWING")} record(s) (${Math.round(pctInterview)}%)`}
+                            />
+                          )}
+                          {pctOffer > 0 && (
+                            <div 
+                              style={{ width: `${pctOffer}%` }} 
+                              className="bg-emerald-500 transition-all cursor-help"
+                              title={`OFFER: ${countByStatus("OFFER")} record(s) (${Math.round(pctOffer)}%)`}
+                            />
+                          )}
+                          {pctRejected > 0 && (
+                            <div 
+                              style={{ width: `${pctRejected}%` }} 
+                              className="bg-rose-500 transition-all cursor-help"
+                              title={`REJECTED: ${countByStatus("REJECTED")} record(s) (${Math.round(pctRejected)}%)`}
+                            />
+                          )}
+                          {pctDormant > 0 && (
+                            <div 
+                              style={{ width: `${pctDormant}%` }} 
+                              className="bg-zinc-450 dark:bg-zinc-600 transition-all cursor-help"
+                              title={`ARCHIVES: ${countByStatus("DORMANT") + countByStatus("ARCHIVED")} record(s) (${Math.round(pctDormant)}%)`}
+                            />
+                          )}
+                        </div>
+                        
+                        {/* Grid Legends */}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[9px] font-mono opacity-80 mt-0.5">
+                          {countByStatus("NEW") > 0 && (
+                            <div className="flex items-center gap-1" title="New records to evaluate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 inline-block" />
+                              <span>NEW ({countByStatus("NEW")})</span>
+                            </div>
+                          )}
+                          {countByStatus("APPLIED") > 0 && (
+                            <div className="flex items-center gap-1" title="Outreach applied leads">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-505 inline-block" />
+                              <span>APPLIED ({countByStatus("APPLIED")})</span>
+                            </div>
+                          )}
+                          {countByStatus("ASSESSMENT_PENDING") > 0 && (
+                            <div className="flex items-center gap-1" title="Tests or takehome exercises pending">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                              <span>ASSESSMENT ({countByStatus("ASSESSMENT_PENDING")})</span>
+                            </div>
+                          )}
+                          {countByStatus("INTERVIEWING") > 0 && (
+                            <div className="flex items-center gap-1" title="Currently speaking with company loops">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-505 inline-block" />
+                              <span>INTERVIEWING ({countByStatus("INTERVIEWING")})</span>
+                            </div>
+                          )}
+                          {countByStatus("OFFER") > 0 && (
+                            <div className="flex items-center gap-1" title="Successful Job / Project bids offered!">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                              <span className="font-bold text-emerald-500">OFFER ({countByStatus("OFFER")})</span>
+                            </div>
+                          )}
+                          {countByStatus("REJECTED") > 0 && (
+                            <div className="flex items-center gap-1" title="Unmatched applications">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
+                              <span>REJECTED ({countByStatus("REJECTED")})</span>
+                            </div>
+                          )}
+                          {countByStatus("DORMANT") + countByStatus("ARCHIVED") > 0 && (
+                            <div className="flex items-center gap-1" title="Archived, dormant, or paused leads">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 inline-block" />
+                              <span>ARCHIVES ({countByStatus("DORMANT") + countByStatus("ARCHIVED")})</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -1388,6 +1454,9 @@ export default function App() {
                         <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("status")}>
                           🟢 Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("dateApplied")}>
+                          📅 Applied {sortField === "dateApplied" && (sortDirection === "asc" ? "▲" : "▼")}
+                        </th>
                         <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("priority")}>
                           🚩 Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
@@ -1547,6 +1616,10 @@ export default function App() {
                               }`}>
                                 {item.status === "ASSESSMENT_PENDING" ? "ASSESSMENT" : item.status}
                               </span>
+                            </td>
+
+                            <td className="py-2 px-3 align-middle font-mono text-[11px] text-slate-400 dark:text-slate-400 whitespace-nowrap">
+                              {item.dateApplied || "—"}
                             </td>
 
                             <td className="py-2 px-3 align-middle font-mono font-bold text-center">
