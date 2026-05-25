@@ -165,13 +165,13 @@ export default function OpportunityModal({
                     className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-sans ${theme.bgInput}`}
                   >
                     <option value="T1" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
-                      🟢 T1 — Execution / VA Level
+                      🔴 T1 — Systems / Architect Level
                     </option>
                     <option value="T2" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
                       🟡 T2 — Operations / Specialist Level (Default)
                     </option>
                     <option value="T3" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
-                      🔴 T3 — Systems / Architect Level
+                      🟢 T3 — Execution / VA Level
                     </option>
                   </select>
                 </div>

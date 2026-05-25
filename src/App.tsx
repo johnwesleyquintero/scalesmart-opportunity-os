@@ -1299,9 +1299,9 @@ export default function App() {
                         className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
                       >
                         <option value="ALL">All Tiers</option>
-                        <option value="T1">⭐ Tier 1 (Dream)</option>
-                        <option value="T2">⭐ Tier 2 (High Value)</option>
-                        <option value="T3">⭐ Tier 3 (Standard)</option>
+                        <option value="T1">🔴 Tier 1 (Systems / Architect)</option>
+                        <option value="T2">🟡 Tier 2 (Specialist)</option>
+                        <option value="T3">🟢 Tier 3 (Execution / VA)</option>
                       </select>
                     </div>
 
@@ -1618,9 +1618,9 @@ export default function App() {
                           className={`px-2 py-1 rounded border text-[10.5px] font-mono cursor-pointer focus:outline-none ${theme.bgInput}`}
                         >
                           <option value="">Shift Tier...</option>
-                          <option value="T1">T1 (Execution)</option>
+                          <option value="T1">T1 (Systems)</option>
                           <option value="T2">T2 (Specialist)</option>
-                          <option value="T3">T3 (Systems)</option>
+                          <option value="T3">T3 (Execution)</option>
                         </select>
 
                         <select
