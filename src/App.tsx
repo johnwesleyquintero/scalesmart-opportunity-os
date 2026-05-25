@@ -849,20 +849,20 @@ export default function App() {
           title="Toggle Left Sidebar"
         >
           <Layers className={`w-4 h-4 ${isDark ? "text-cyan-400 animate-pulse" : "text-blue-500"}`} />
-          <h1 className="text-xs font-black uppercase tracking-widest font-mono">
+          <h1 className="text-xs font-black uppercase tracking-widest font-mono select-none">
             Scalesmart <span className={theme.accentBlue}>OS</span>
           </h1>
-          <span className={`text-[8.5px] font-mono leading-none border px-1.5 py-0.5 rounded-full ${isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-neutral-100 border-neutral-200 text-neutral-600"}`}>
+          <span className={`hidden md:inline-block text-[8.5px] font-mono leading-none border px-1.5 py-0.5 rounded-full ${isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-neutral-100 border-neutral-200 text-neutral-600"}`}>
             PRO OPERATOR v1.0
           </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-1 max-w-sm mx-4">
+        <div className="flex items-center gap-2 flex-1 max-w-sm mx-2 sm:mx-4">
           <div className="relative w-full">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-50" />
             <input
               type="text"
-              placeholder="Search target company or outreach keyword..."
+              placeholder="Search targets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full text-xs rounded pl-8 pr-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-500 ${theme.bgInput}`}
@@ -920,110 +920,117 @@ export default function App() {
 
         {/* 2. Collapsible Left Navigation Column */}
         {isLeftSidebarOpen && (
-          <aside className={`w-64 border-r shrink-0 flex flex-col justify-between select-none z-30 ${theme.bgSidebar}`} id="left-sidebar">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-black uppercase text-slate-500 tracking-wider">Operational Hub</span>
-                <button 
-                  onClick={() => setIsLeftSidebarOpen(false)}
-                  className={`p-1 rounded transition opacity-60 hover:opacity-100 ${isDark ? "hover:bg-slate-850" : "hover:bg-[#f1f1ef]"}`}
-                  title="Collapse left panel (Ctrl+\)"
-                >
-                  <PanelLeftClose className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Navigation Tabs list */}
-              <div className="space-y-1">
-                <button
-                  onClick={() => setActiveTab("cockpit")}
-                  className={`w-full py-1.5 px-2.5 rounded text-xs text-left transition flex items-center gap-2 cursor-pointer font-medium ${
-                    activeTab === "cockpit" 
-                      ? (isDark ? "bg-[#2c2c2c]/80 text-white" : "bg-[#eae9e6]/80 text-black font-semibold") 
-                      : (isDark ? "text-slate-350 hover:bg-slate-850/60" : "text-neutral-600 hover:bg-neutral-100")
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  Spreadsheet List Cockpit
-                </button>
-                <button
-                  onClick={() => setActiveTab("radar")}
-                  className={`w-full py-1.5 px-2.5 rounded text-xs text-left transition flex items-center gap-2 cursor-pointer font-medium ${
-                    activeTab === "radar" 
-                      ? (isDark ? "bg-[#2c2c2c]/80 text-white" : "bg-[#eae9e6]/80 text-black font-semibold") 
-                      : (isDark ? "text-slate-350 hover:bg-slate-850/60" : "text-neutral-600 hover:bg-neutral-100")
-                  }`}
-                >
-                  <Radio className="w-3.5 h-3.5 text-blue-500" />
-                  Signal Radar Queue ({radarSignals.length})
-                </button>
-              </div>
-
-              {/* Status/Priority filter blocks inside sidebars */}
-              {activeTab === "cockpit" && (
-                <div className="space-y-4 pt-4 border-t border-[#2c2c2c]/10 dark:border-slate-850">
-                  <span className="text-[9px] font-mono font-bold uppercase text-slate-500 block px-1 tracking-wider">Ledger Partitions</span>
-                  <div className="space-y-1 font-mono">
-                    <button
-                      onClick={() => setFilter("ALL")}
-                      className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "ALL" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
-                      }`}
-                    >
-                      <span>🗂️ ALL TARGETS</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numAll}</span>
-                    </button>
-                    <button
-                      onClick={() => setFilter("ACTIVE")}
-                      className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "ACTIVE" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
-                      }`}
-                    >
-                      <span>⚡ ACTIVE PIPELINE</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numActive}</span>
-                    </button>
-                    <button
-                      onClick={() => setFilter("INTERVIEWING")}
-                      className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "INTERVIEWING" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
-                      }`}
-                    >
-                      <span>💬 ACTIVE LOOPS</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numInterviewing}</span>
-                    </button>
-                    <button
-                      onClick={() => setFilter("ACTION_REQUIRED")}
-                      className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "ACTION_REQUIRED" ? "text-rose-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
-                      }`}
-                    >
-                      <span>⚠️ ALERTS PENDING</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border border-rose-500/10 text-rose-400 bg-rose-500/5`}>{numActionRequired}</span>
-                    </button>
-                    <button
-                      onClick={() => setFilter("DORMANT")}
-                      className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "DORMANT" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
-                      }`}
-                    >
-                      <span>💤 ARCHIVES</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numDormant}</span>
-                    </button>
-                  </div>
+          <>
+            {/* Soft Backdrop Overlay for Tablet / Mobile */}
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-[2px] lg:hidden z-35"
+              onClick={() => setIsLeftSidebarOpen(false)}
+            />
+            <aside className={`absolute lg:relative left-0 top-0 bottom-0 h-full w-64 border-r shrink-0 flex flex-col justify-between select-none z-40 shadow-2xl lg:shadow-none transition-all duration-200 ${theme.bgSidebar}`} id="left-sidebar">
+              <div className="p-4 space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-black uppercase text-slate-500 tracking-wider">Operational Hub</span>
+                  <button 
+                    onClick={() => setIsLeftSidebarOpen(false)}
+                    className={`p-1 rounded transition opacity-60 hover:opacity-100 ${isDark ? "hover:bg-slate-850" : "hover:bg-[#f1f1ef]"}`}
+                    title="Collapse left panel (Ctrl+\)"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
-            </div>
 
-            <div className={`p-4 border-t text-[10.5px] font-mono select-none flex flex-col gap-2 ${isDark ? "border-slate-850" : "border-neutral-200"}`}>
-              <div className="flex justify-between items-center text-slate-400 leading-none">
-                <span>LOCAL CACHE</span>
-                <span className="text-emerald-500">● ARMORED</span>
+                {/* Navigation Tabs list */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setActiveTab("cockpit")}
+                    className={`w-full py-1.5 px-2.5 rounded text-xs text-left transition flex items-center gap-2 cursor-pointer font-semibold ${
+                      activeTab === "cockpit" 
+                        ? (isDark ? "bg-[#2c2c2c]/80 text-white" : "bg-[#eae9e6]/80 text-black font-semibold") 
+                        : (isDark ? "text-slate-350 hover:bg-slate-850/60" : "text-neutral-600 hover:bg-neutral-100")
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    Spreadsheet List Cockpit
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("radar")}
+                    className={`w-full py-1.5 px-2.5 rounded text-xs text-left transition flex items-center gap-2 cursor-pointer font-semibold ${
+                      activeTab === "radar" 
+                        ? (isDark ? "bg-[#2c2c2c]/80 text-white" : "bg-[#eae9e6]/80 text-black font-semibold") 
+                        : (isDark ? "text-slate-350 hover:bg-slate-850/60" : "text-neutral-600 hover:bg-neutral-100")
+                    }`}
+                  >
+                    <Radio className="w-3.5 h-3.5 text-blue-500" />
+                    Signal Radar Queue ({radarSignals.length})
+                  </button>
+                </div>
+
+                {/* Status/Priority filter blocks inside sidebars */}
+                {activeTab === "cockpit" && (
+                  <div className="space-y-4 pt-4 border-t border-[#2c2c2c]/10 dark:border-slate-850">
+                    <span className="text-[9px] font-mono font-bold uppercase text-slate-500 block px-1 tracking-wider">Ledger Partitions</span>
+                    <div className="space-y-1 font-mono">
+                      <button
+                        onClick={() => setFilter("ALL")}
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                          filter === "ALL" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        }`}
+                      >
+                        <span>🗂️ ALL TARGETS</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numAll}</span>
+                      </button>
+                      <button
+                        onClick={() => setFilter("ACTIVE")}
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                          filter === "ACTIVE" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        }`}
+                      >
+                        <span>⚡ ACTIVE PIPELINE</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numActive}</span>
+                      </button>
+                      <button
+                        onClick={() => setFilter("INTERVIEWING")}
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                          filter === "INTERVIEWING" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        }`}
+                      >
+                        <span>💬 ACTIVE LOOPS</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numInterviewing}</span>
+                      </button>
+                      <button
+                        onClick={() => setFilter("ACTION_REQUIRED")}
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                          filter === "ACTION_REQUIRED" ? "text-rose-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        }`}
+                      >
+                        <span>⚠️ ALERTS PENDING</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded border border-rose-500/10 text-rose-400 bg-rose-500/5`}>{numActionRequired}</span>
+                      </button>
+                      <button
+                        onClick={() => setFilter("DORMANT")}
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                          filter === "DORMANT" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        }`}
+                      >
+                        <span>💤 ARCHIVES</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numDormant}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="opacity-50 text-[10px] leading-relaxed">
-                Persistent storage mapped locally and synchronized live with cloud. Click "Push Local" to overwrite online databases.
-              </p>
-            </div>
-          </aside>
+
+              <div className={`p-4 border-t text-[10.5px] font-mono select-none flex flex-col gap-2 ${isDark ? "border-slate-855" : "border-neutral-200"}`}>
+                <div className="flex justify-between items-center text-slate-400 leading-none">
+                  <span>LOCAL CACHE</span>
+                  <span className="text-emerald-500">● ARMORED</span>
+                </div>
+                <p className="opacity-50 text-[10px] leading-relaxed">
+                  Persistent storage mapped locally and synchronized live with cloud. Click "Push Local" to overwrite online databases.
+                </p>
+              </div>
+            </aside>
+          </>
         )}
 
         {/* 3. MAIN COCKPIT VIEWPORT TABLE CONTENT AREA */}
@@ -1766,19 +1773,26 @@ export default function App() {
 
               {/* Right Column: Dynamic Inspector Detail Panel */}
               {isRightSidebarOpen && (
-                <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0 h-full overflow-y-auto scrollbar-thin`} id="detail-panel">
-                  <OpportunityDetails
-                    selectedOpp={selectedOpp}
-                    isDark={isDark}
-                    theme={theme}
-                    onClose={() => setIsRightSidebarOpen(false)}
-                    onEdit={openEditModal}
-                    onUpdateStatus={updateStatus}
-                    onUpdatePriority={updatePriority}
-                    onUpdateTier={updateTier}
-                    onUpdateOpportunity={updateOpportunity}
+                <>
+                  {/* Soft Backdrop Overlay for Tablet / Mobile */}
+                  <div 
+                    className="absolute inset-0 bg-black/60 backdrop-blur-[2px] lg:hidden z-35"
+                    onClick={() => setIsRightSidebarOpen(false)}
                   />
-                </aside>
+                  <aside className={`absolute lg:relative right-0 top-0 bottom-0 h-full w-full sm:w-96 border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0 z-40 shadow-2xl lg:shadow-none transition-all duration-200 overflow-y-auto scrollbar-thin`} id="detail-panel">
+                    <OpportunityDetails
+                      selectedOpp={selectedOpp}
+                      isDark={isDark}
+                      theme={theme}
+                      onClose={() => setIsRightSidebarOpen(false)}
+                      onEdit={openEditModal}
+                      onUpdateStatus={updateStatus}
+                      onUpdatePriority={updatePriority}
+                      onUpdateTier={updateTier}
+                      onUpdateOpportunity={updateOpportunity}
+                    />
+                  </aside>
+                </>
               )}
             </motion.div>
           )}
