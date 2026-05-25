@@ -1166,22 +1166,22 @@ export default function App() {
                           />
                         </th>
                         <th className="py-2.5 px-3 w-6 text-center">Reorder</th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("companyName")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("companyName")}>
                           🏢 Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("roleTitle")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("roleTitle")}>
                           💼 Role Title {sortField === "roleTitle" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("source")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("source")}>
                           🌐 Source {sortField === "source" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("tier")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("tier")}>
                           🚦 Tier {sortField === "tier" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("status")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("status")}>
                           🟢 Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-white transition" onClick={() => handleSort("priority")}>
+                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("priority")}>
                           🚩 Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
                         <th className="py-2.5 px-3 text-right">Actions</th>
