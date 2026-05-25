@@ -1423,6 +1423,11 @@ export default function App() {
                               setDragOverId(null);
                             }}
                             onClick={() => { setSelectedId(item.id); setFocusedId(item.id); }}
+                            onDoubleClick={() => {
+                              setSelectedId(item.id);
+                              setFocusedId(item.id);
+                              setIsRightSidebarOpen(true);
+                            }}
                             className={`transition-all duration-100 group outline-none relative ${
                               draggingId === item.id
                                 ? (isDark ? "opacity-30 bg-slate-800 border-y-2 border-dashed border-sky-500 scale-[0.99]" : "opacity-30 bg-slate-100 border-y-2 border-dashed border-sky-400 scale-[0.99]")
