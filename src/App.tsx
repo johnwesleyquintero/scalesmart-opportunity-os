@@ -832,9 +832,9 @@ export default function App() {
   }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode, isShortcutModalOpen]);
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
+    <div className={`h-screen max-h-screen overflow-hidden flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
       {/* 1. Global Header Bar */}
-      <header className={`h-11 border-b flex items-center justify-between px-4 z-40 select-none sticky top-0 ${theme.bgHeader}`}>
+      <header className={`h-11 shrink-0 border-b flex items-center justify-between px-4 z-40 select-none sticky top-0 ${theme.bgHeader}`}>
         <div 
           onClick={() => setIsLeftSidebarOpen((prev) => !prev)}
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition active:scale-[0.98] select-none"
@@ -884,7 +884,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex-1 flex min-h-0 relative">
+      <div className="flex-1 flex min-h-0 overflow-hidden relative">
         
         {/* Helper layout button overlays when sidebar collapsed */}
         {!isLeftSidebarOpen && (
@@ -1026,7 +1026,7 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -3 }}
               transition={{ duration: 0.11 }}
-              className="flex-1 flex flex-col lg:flex-row min-w-0"
+              className="flex-1 flex flex-col lg:flex-row min-w-0 h-full overflow-hidden"
               id="cockpit-hub"
             >
               <main className="flex-1 overflow-x-auto overflow-y-auto p-6 scrollbar-thin">
@@ -1749,7 +1749,7 @@ export default function App() {
 
               {/* Right Column: Dynamic Inspector Detail Panel */}
               {isRightSidebarOpen && (
-                <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0`} id="detail-panel">
+                <aside className={`w-full lg:w-96 border-t lg:border-t-0 lg:border-l ${theme.border} ${theme.bgSidebar} p-5 shrink-0 h-full overflow-y-auto scrollbar-thin`} id="detail-panel">
                   <OpportunityDetails
                     selectedOpp={selectedOpp}
                     isDark={isDark}
