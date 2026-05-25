@@ -1497,26 +1497,26 @@ export default function App() {
                             }}
                           />
                         </th>
-                        <th className={`${thPad} w-6 text-center`}>Reorder</th>
+                        <th className={`${thPad} w-6 text-center hidden sm:table-cell`}>Reorder</th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("companyName")}>
                           🏢 Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("roleTitle")}>
                           💼 Role Title {sortField === "roleTitle" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("source")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden md:table-cell`} onClick={() => handleSort("source")}>
                           🌐 Source {sortField === "source" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("tier")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden sm:table-cell`} onClick={() => handleSort("tier")}>
                           🚦 Tier {sortField === "tier" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("status")}>
                           🟢 Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("dateApplied")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden lg:table-cell`} onClick={() => handleSort("dateApplied")}>
                           📅 Applied {sortField === "dateApplied" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("priority")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden sm:table-cell`} onClick={() => handleSort("priority")}>
                           🚩 Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
                         <th className={`${thPad} text-right`}>Actions</th>
@@ -1587,7 +1587,7 @@ export default function App() {
                               />
                             </td>
 
-                            <td className={`${tdDragPad} text-center align-middle`}>
+                            <td className={`${tdDragPad} text-center align-middle hidden sm:table-cell`}>
                               <div className="flex items-center justify-center cursor-row-resize opacity-40 group-hover:opacity-100 transition">
                                 <GripVertical className="w-3.5 h-3.5" />
                               </div>
@@ -1607,9 +1607,9 @@ export default function App() {
 
                             <td className={`${tdPad} break-all font-medium leading-relaxed max-w-xs`}>{item.roleTitle}</td>
                             
-                            <td className={`${tdPad} font-mono text-[11px]`}>{item.source}</td>
+                            <td className={`${tdPad} font-mono text-[11px] hidden md:table-cell`}>{item.source}</td>
                             
-                            <td className={`${tdPad} font-mono text-center font-bold relative`}>
+                            <td className={`${tdPad} font-mono text-center font-bold relative hidden sm:table-cell`}>
                               <div className="relative inline-block group/tier">
                                 <span 
                                                                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
@@ -1668,7 +1668,7 @@ export default function App() {
                                 item.status === "OFFER" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-black animate-pulse" :
                                 item.status === "INTERVIEWING" ? "bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold" :
                                 item.status === "ASSESSMENT_PENDING" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-                                item.status === "REJECTED" ? "bg-rose-500/10 text-rose-450 border border-rose-500/20 line-through opacity-70" :
+                                item.status === "REJECTED" ? "bg-rose-500/10 text-rose-455 border border-rose-500/20 line-through opacity-70" :
                                 item.status === "APPLIED" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" :
                                 item.status === "NEW" ? "bg-slate-500/10 text-slate-400 border border-slate-700" :
                                 isDark ? "bg-purple-500/10 text-purple-400 border border-purple-500/25" : "bg-purple-50 text-purple-700 border border-purple-200"
@@ -1677,11 +1677,11 @@ export default function App() {
                               </span>
                             </td>
 
-                            <td className={`${tdPad} align-middle font-mono text-[11px] text-slate-400 dark:text-slate-400 whitespace-nowrap`}>
+                            <td className={`${tdPad} align-middle font-mono text-[11px] text-slate-400 dark:text-slate-400 whitespace-nowrap hidden lg:table-cell`}>
                               {item.dateApplied || "—"}
                             </td>
 
-                            <td className={`${tdPad} align-middle font-mono font-bold text-center`}>
+                            <td className={`${tdPad} align-middle font-mono font-bold text-center hidden sm:table-cell`}>
                               <span className={item.priority === "P0" ? "text-rose-500 font-extrabold" : "opacity-90"}>
                                 {item.priority}
                               </span>
