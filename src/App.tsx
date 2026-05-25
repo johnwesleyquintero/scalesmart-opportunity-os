@@ -964,7 +964,7 @@ export default function App() {
                     <button
                       onClick={() => setFilter("ACTIVE")}
                       className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "ACTIVE" ? "text-blue-505 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        filter === "ACTIVE" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                       }`}
                     >
                       <span>⚡ ACTIVE PIPELINE</span>
@@ -982,7 +982,7 @@ export default function App() {
                     <button
                       onClick={() => setFilter("ACTION_REQUIRED")}
                       className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
-                        filter === "ACTION_REQUIRED" ? "text-rose-450 font-bold" : `${theme.textSecondary} hover:text-sky-400`
+                        filter === "ACTION_REQUIRED" ? "text-rose-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                       }`}
                     >
                       <span>⚠️ ALERTS PENDING</span>
@@ -1041,7 +1041,7 @@ export default function App() {
                       onClick={handleCopyMarkdown}
                       className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${
                         selectedRowIds.length > 0
-                          ? "bg-[#252525] text-cyan-450 border-cyan-400/30 dark:bg-slate-900/80 dark:text-cyan-400 dark:border-cyan-500/20"
+                          ? "bg-[#252525] text-cyan-400 border-cyan-400/30 dark:bg-slate-900/80 dark:text-cyan-400 dark:border-cyan-500/20"
                           : theme.bgButtonSec
                       }`}
                       title={

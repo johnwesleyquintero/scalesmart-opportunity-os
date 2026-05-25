@@ -394,7 +394,7 @@ export default function OpportunityDetails({
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "APPLIED")}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
-                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-80 border-slate-750" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950"
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-800" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
                 }`}
               >
                 → Applied
@@ -404,7 +404,7 @@ export default function OpportunityDetails({
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "ASSESSMENT_PENDING")}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
-                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-955"
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-800" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
                 }`}
               >
                 → Test
@@ -414,7 +414,7 @@ export default function OpportunityDetails({
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "INTERVIEWING")}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
-                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-955"
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-800" : "bg-white border-[#eae9e6] text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
                 }`}
               >
                 → Loop
@@ -423,7 +423,7 @@ export default function OpportunityDetails({
             {selectedOpp.status !== "OFFER" && (
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "OFFER")}
-                className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-505 transition shrink-0"
+                className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-600 transition shrink-0"
               >
                 ✨ Offered
               </button>
@@ -431,7 +431,7 @@ export default function OpportunityDetails({
             {selectedOpp.status !== "REJECTED" && selectedOpp.status !== "DORMANT" && (
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "REJECTED")}
-                className="px-1.5 py-0.5 rounded text-[9px] font-mono border border-rose-500/10 text-rose-455 bg-rose-500/5 hover:bg-rose-500/10 transition hover:text-rose-355 shrink-0"
+                className="px-1.5 py-0.5 rounded text-[9px] font-mono border border-rose-500/15 text-rose-500 bg-rose-500/5 hover:bg-rose-500/10 transition hover:text-rose-400 shrink-0"
               >
                 ✕ Reject
               </button>
@@ -440,7 +440,7 @@ export default function OpportunityDetails({
               <button
                 onClick={() => onUpdateStatus(selectedOpp, "DORMANT")}
                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono border transition shrink-0 ${
-                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-80 border-slate-755" : "bg-white border-[#eae9e6] text-neutral-650 hover:bg-neutral-50 hover:text-neutral-955"
+                  isDark ? "bg-slate-900 border-slate-800 text-slate-350 hover:text-white hover:bg-slate-800" : "bg-white border-[#eae9e6] text-[#6b6b6b] hover:bg-[#fafafa] hover:text-[#111111]"
                 }`}
               >
                 💤 Dormant

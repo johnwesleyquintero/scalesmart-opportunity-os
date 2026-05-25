@@ -435,7 +435,7 @@ function doPost(e) {
                 className={`px-3 py-2 rounded text-xs select-none flex items-center gap-1 font-mono transition border ${
                   isConnecting 
                     ? "opacity-50 cursor-not-allowed" 
-                    : isDark ? "bg-blue-600 hover:bg-blue-500 text-white border-blue-600" : "bg-blue-50 hover:bg-blue-105 text-blue-700 border-blue-300"
+                    : isDark ? "bg-blue-600 hover:bg-blue-500 text-white border-blue-600" : "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
                 }`}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isConnecting ? "animate-spin" : ""}`} />
@@ -458,7 +458,7 @@ function doPost(e) {
                 className={`w-full py-2.5 px-3 rounded text-xs font-mono font-bold transition border flex items-center justify-center gap-1.5 shadow-xs ${
                   isConnecting 
                     ? "opacity-50 cursor-not-allowed" 
-                    : isDark ? "bg-slate-900 border-slate-755 text-[#34d399] hover:bg-slate-850 hover:text-emerald-305" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300"
+                    : isDark ? "bg-slate-900 border-slate-700 text-[#34d399] hover:bg-slate-800 hover:text-emerald-300" : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300"
                 }`}
                 title="Command Google Apps Script to run scanGmailSignals() live and fetch updated data"
               >
