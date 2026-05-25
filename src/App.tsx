@@ -1422,7 +1422,7 @@ export default function App() {
                   </div>
                 ) : (
                   <table className={`w-full text-left text-xs border-collapse relative font-sans ${isDark ? "border-slate-855" : "border-[#eae9e6]"}`} id="opportunity-table">
-                    <thead>
+                    <thead className="sticky top-0 z-20">
                       <tr className={`border-b select-none font-mono ${theme.thead}`}>
                         <th className="py-2.5 px-3 w-8 text-center select-none">
                           <input 
