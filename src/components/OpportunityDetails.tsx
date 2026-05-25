@@ -2,9 +2,167 @@ import React, { useState, useEffect } from "react";
 import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../types";
 import { 
   Pencil, PanelRightClose, AlertTriangle, ExternalLink, FileText, 
-  Copy, Check, ChevronDown, ChevronUp, PlusCircle, History, Trash2, Gauge 
+  Copy, Check, ChevronDown, ChevronUp, PlusCircle, History, Trash2, Gauge,
+  Save, Eye
 } from "lucide-react";
 import { getRiskOfOpportunity } from "../utils";
+
+// Pristine Inline Markdown Parsed Stream Render Engine
+function parseInlineElements(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let currentText = text;
+  let keyIdx = 0;
+
+  while (currentText.length > 0) {
+    const boldStartIdx = currentText.indexOf("**");
+    const codeStartIdx = currentText.indexOf("`");
+
+    if (boldStartIdx === -1 && codeStartIdx === -1) {
+      parts.push(<span key={keyIdx++}>{currentText}</span>);
+      break;
+    }
+
+    // Bold occurs first or code is missing
+    if (boldStartIdx !== -1 && (codeStartIdx === -1 || boldStartIdx < codeStartIdx)) {
+      if (boldStartIdx > 0) {
+        parts.push(<span key={keyIdx++}>{currentText.substring(0, boldStartIdx)}</span>);
+      }
+      const boldEndIdx = currentText.indexOf("**", boldStartIdx + 2);
+      if (boldEndIdx !== -1) {
+        parts.push(
+          <strong key={keyIdx++} className="font-bold text-sky-500 dark:text-cyan-400">
+            {currentText.substring(boldStartIdx + 2, boldEndIdx)}
+          </strong>
+        );
+        currentText = currentText.substring(boldEndIdx + 2);
+      } else {
+        parts.push(<span key={keyIdx++}>**</span>);
+        currentText = currentText.substring(boldStartIdx + 2);
+      }
+    } 
+    // Monospace code occurs first
+    else {
+      if (codeStartIdx > 0) {
+        parts.push(<span key={keyIdx++}>{currentText.substring(0, codeStartIdx)}</span>);
+      }
+      const codeEndIdx = currentText.indexOf("`", codeStartIdx + 1);
+      if (codeEndIdx !== -1) {
+        parts.push(
+          <code key={keyIdx++} className="px-1 py-0.5 rounded font-mono text-[10px] bg-indigo-500/10 text-indigo-500 dark:text-cyan-300 dark:bg-[#1a1a1a] border border-indigo-550/10 dark:border-cyan-550/10">
+            {currentText.substring(codeStartIdx + 1, codeEndIdx)}
+          </code>
+        );
+        currentText = currentText.substring(codeEndIdx + 1);
+      } else {
+        parts.push(<span key={keyIdx++}>`</span>);
+        currentText = currentText.substring(codeStartIdx + 1);
+      }
+    }
+  }
+
+  return <>{parts}</>;
+}
+
+function renderMarkdown(text: string, isDark: boolean): React.ReactNode[] {
+  if (!text || !text.trim()) {
+    return [<p key="empty" className="italic opacity-60 text-[11px]">No notes configured. Select "Edit Notes" to write clean Markdown checklists or SOP details!</p>];
+  }
+
+  const lines = text.split("\n");
+  
+  return lines.map((line, idx) => {
+    // 1. Triple header check
+    if (line.startsWith("### ")) {
+      return (
+        <h5 key={idx} className="font-sans font-bold text-[11px] mt-2 mb-1 text-sky-500 dark:text-cyan-400">
+          {parseInlineElements(line.slice(4))}
+        </h5>
+      );
+    }
+    if (line.startsWith("## ")) {
+      return (
+        <h4 key={idx} className={`font-sans font-bold text-xs mt-3 mb-1 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+          {parseInlineElements(line.slice(3))}
+        </h4>
+      );
+    }
+    if (line.startsWith("# ")) {
+      return (
+        <h3 key={idx} className={`font-sans font-bold text-sm mt-3.5 mb-1.5 pb-0.5 border-b ${isDark ? "border-slate-800 text-white" : "border-neutral-200 text-neutral-900"}`}>
+          {parseInlineElements(line.slice(2))}
+        </h3>
+      );
+    }
+
+    // 2. Checklist checks
+    if (line.startsWith("- [ ] ") || line.startsWith("* [ ] ")) {
+      return (
+        <div key={idx} className="flex items-center gap-2 my-1 text-slate-400 dark:text-slate-400">
+          <span className={`w-3.5 h-3.5 rounded border ${isDark ? "border-slate-700 bg-slate-900" : "border-neutral-300 bg-white"} flex-shrink-0`} />
+          <span className="font-sans text-xs">{parseInlineElements(line.slice(6))}</span>
+        </div>
+      );
+    }
+    if (line.startsWith("- [x] ") || line.startsWith("* [x] ") || line.startsWith("- [X] ") || line.startsWith("* [X] ")) {
+      return (
+        <div key={idx} className="flex items-center gap-2 my-1 text-slate-500 line-through">
+          <span className="w-3.5 h-3.5 rounded bg-emerald-500 dark:bg-emerald-600 border border-emerald-600 flex items-center justify-center flex-shrink-0 text-white">
+            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+          <span className="font-sans text-xs opacity-75">{parseInlineElements(line.slice(6))}</span>
+        </div>
+      );
+    }
+
+    // 3. Bullets check
+    if (line.startsWith("- ") || line.startsWith("* ")) {
+      return (
+        <div key={idx} className="flex gap-2 items-start my-1 pl-1">
+          <span className={`w-1 h-1 rounded-full ${isDark ? "bg-cyan-400" : "bg-blue-600"} shrink-0 mt-1.5`} />
+          <span className="font-sans text-xs flex-1">{parseInlineElements(line.slice(2))}</span>
+        </div>
+      );
+    }
+
+    // 4. Numbers check
+    const numMatch = line.match(/^(\d+)\.\s(.*)/);
+    if (numMatch) {
+      return (
+        <div key={idx} className="flex gap-2 items-start my-1 pl-1">
+          <span className="font-mono text-[10.5px] font-bold text-sky-400 shrink-0 mt-0.5">{numMatch[1]}.</span>
+          <span className="font-sans text-xs flex-1">{parseInlineElements(numMatch[2])}</span>
+        </div>
+      );
+    }
+
+    // 5. Blockquote check
+    if (line.startsWith("> ")) {
+      return (
+        <blockquote key={idx} className={`pl-2.5 border-l-2 py-0.5 my-1.5 italic ${isDark ? "border-slate-800 text-slate-400 bg-slate-900/40" : "border-neutral-300 bg-neutral-50 text-neutral-600"}`}>
+          {parseInlineElements(line.slice(2))}
+        </blockquote>
+      );
+    }
+
+    // 6. Horizontal grid
+    if (line === "---" || line === "***") {
+      return <hr key={idx} className={`my-3 border-t ${isDark ? "border-slate-800" : "border-neutral-200"}`} />;
+    }
+
+    // Blank rows
+    if (line.trim() === "") {
+      return <div key={idx} className="h-1.5" />;
+    }
+
+    return (
+      <p key={idx} className="font-sans text-xs leading-relaxed my-0.5 min-h-[0.75rem]">
+        {parseInlineElements(line)}
+      </p>
+    );
+  });
+}
 
 interface OpportunityDetailsProps {
   selectedOpp: Opportunity | null;
@@ -33,6 +191,11 @@ export default function OpportunityDetails({
   const [logInput, setLogInput] = useState("");
   const [isScorecardOpen, setIsScorecardOpen] = useState(false);
 
+  // Notes inline markdown tab state
+  const [editedNotes, setEditedNotes] = useState("");
+  const [notesTab, setNotesTab] = useState<"preview" | "edit">("preview");
+  const [isCopiedNotes, setIsCopiedNotes] = useState(false);
+
   // Scorecard evaluation metrics (1-5 range)
   const [sop, setSop] = useState(3);
   const [automation, setAutomation] = useState(3);
@@ -47,8 +210,32 @@ export default function OpportunityDetails({
       setCompensation(selectedOpp.compensationScore ?? 3);
       setUrgency(selectedOpp.urgencyScore ?? 3);
       setLogInput("");
+      setEditedNotes(selectedOpp.notes || "");
+      setNotesTab("preview");
     }
   }, [selectedOpp]);
+
+  const handleCopyNotes = async () => {
+    if (!editedNotes) return;
+    try {
+      await navigator.clipboard.writeText(editedNotes);
+      setIsCopiedNotes(true);
+      setTimeout(() => setIsCopiedNotes(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy notes: ", err);
+    }
+  };
+
+  const handleSaveNotes = () => {
+    if (!selectedOpp || !onUpdateOpportunity) return;
+    const updatedOpp: Opportunity = {
+      ...selectedOpp,
+      notes: editedNotes,
+      lastActivityDate: "2026-05-24"
+    };
+    onUpdateOpportunity(updatedOpp);
+    setNotesTab("preview");
+  };
 
   const handleCopyLink = async () => {
     if (!selectedOpp?.link) return;
@@ -482,12 +669,147 @@ export default function OpportunityDetails({
           <span className={`block p-2 rounded font-mono text-xs ${isDark ? "bg-[#252525] text-slate-300" : "bg-[#f1f1ef] text-[#37352f]"}`}>{selectedOpp.nextActionDate || "No planned action"}</span>
         </div>
 
-        {/* Global static notes */}
-        <div>
-          <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Notes </label>
-          <div className={`p-3 rounded leading-relaxed whitespace-pre-wrap text-xs max-h-48 overflow-y-auto border ${isDark ? "bg-[#252525] text-slate-300 border-[#2c2c2c]" : "bg-white text-[#37352f] border-[#eae9e6] shadow-xs"}`}>
-            {selectedOpp.notes || "No outbound notes configured."}
+        {/* Interactive Markdown Notes block */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold">Strategic Notes (Markdown)</span>
+            
+            <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-[#181818] p-0.5 rounded-md border border-neutral-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setNotesTab("preview")}
+                className={`px-2 py-1 rounded text-[10px] flex items-center gap-1 font-medium transition cursor-pointer ${
+                  notesTab === "preview"
+                    ? "bg-white dark:bg-slate-800 text-blue-500 dark:text-cyan-400 shadow-xs font-bold"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+              >
+                <Eye className="w-2.5 h-2.5" />
+                <span>Preview</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNotesTab("edit")}
+                className={`px-2 py-1 rounded text-[10px] flex items-center gap-1 font-medium transition cursor-pointer ${
+                  notesTab === "edit"
+                    ? "bg-white dark:bg-slate-800 text-blue-500 dark:text-cyan-400 shadow-xs font-bold"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                <span>Write</span>
+              </button>
+            </div>
           </div>
+
+          {notesTab === "preview" ? (
+            <div className="group/markdown relative">
+              <div className={`p-3.5 rounded-lg leading-relaxed text-xs max-h-56 overflow-y-auto border space-y-1.5 ${
+                isDark 
+                  ? "bg-[#181818] text-slate-350 border-slate-800/80" 
+                  : "bg-white text-neutral-800 border-neutral-200 shadow-inner"
+              }`}>
+                {renderMarkdown(selectedOpp.notes || "", isDark)}
+              </div>
+              
+              {selectedOpp.notes && (
+                <div className="absolute right-2.5 top-2.5 opacity-0 group-hover/markdown:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={handleCopyNotes}
+                    className={`p-1 rounded text-[10px] font-mono border transition flex items-center gap-1 ${
+                      isCopiedNotes
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
+                        : isDark
+                          ? "bg-[#252525] border-slate-700 text-slate-400 hover:text-white"
+                          : "bg-white border-neutral-250 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50"
+                    }`}
+                    title="Copy raw markdown to clipboard"
+                  >
+                    {isCopiedNotes ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                    <span>{isCopiedNotes ? "Copied!" : "Copy"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 border rounded-lg p-2.5 bg-neutral-50 dark:bg-[#181818] border-neutral-200 dark:border-slate-800">
+              {/* Cheat sheet/helpers toolbar */}
+              <div className="flex items-center flex-wrap gap-1 pb-1.5 border-b border-neutral-200 dark:border-slate-800/50">
+                <button
+                  type="button"
+                  onClick={() => setEditedNotes(prev => prev + (prev.endsWith("\n") || prev.length === 0 ? "" : "\n") + "# ")}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-mono hover:bg-neutral-200 dark:hover:bg-slate-800 text-neutral-600 dark:text-slate-400 border border-neutral-200 dark:border-slate-800 transition cursor-pointer"
+                  title="Insert Main Header"
+                >
+                  H1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditedNotes(prev => prev + (prev.endsWith("\n") || prev.length === 0 ? "" : "\n") + "## ")}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-mono hover:bg-neutral-200 dark:hover:bg-slate-800 text-neutral-600 dark:text-slate-400 border border-neutral-200 dark:border-slate-800 transition cursor-pointer"
+                  title="Insert Section Header"
+                >
+                  H2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditedNotes(prev => prev + "**Bold**")}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-mono hover:bg-neutral-200 dark:hover:bg-slate-800 text-neutral-600 dark:text-slate-400 border border-neutral-200 dark:border-slate-800 transition font-bold cursor-pointer"
+                  title="Insert Bold Text"
+                >
+                  B
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditedNotes(prev => prev + (prev.endsWith("\n") || prev.length === 0 ? "" : "\n") + "- ")}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-mono hover:bg-neutral-200 dark:hover:bg-slate-800 text-neutral-600 dark:text-slate-400 border border-neutral-200 dark:border-slate-800 transition cursor-pointer"
+                  title="Insert Bullet Point"
+                >
+                  • List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditedNotes(prev => prev + (prev.endsWith("\n") || prev.length === 0 ? "" : "\n") + "- [ ] ")}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-mono hover:bg-neutral-200 dark:hover:bg-slate-800 text-neutral-600 dark:text-slate-400 border border-neutral-200 dark:border-slate-800 transition cursor-pointer"
+                  title="Insert Checkbox Task"
+                >
+                  [ ] Todo
+                </button>
+              </div>
+
+              <textarea
+                value={editedNotes}
+                onChange={(e) => setEditedNotes(e.target.value)}
+                placeholder="Write structured Markdown notes here...\n\nExample:\n# Key SOP\n- [ ] Research recruiter link\n- [x] Submit online form\n\nUse **bold** or `code` markers."
+                rows={5}
+                className={`w-full text-xs font-mono p-2 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 leading-normal border resize-y ${theme.bgInput}`}
+              />
+
+              <div className="flex justify-end gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditedNotes(selectedOpp.notes || "");
+                    setNotesTab("preview");
+                  }}
+                  className={`px-2.5 py-1 text-[10px] font-mono rounded border transition ${
+                    isDark ? "bg-[#252525] hover:bg-slate-800 text-slate-400 border-slate-850" : "bg-white hover:bg-neutral-100 text-neutral-600 border-neutral-200"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveNotes}
+                  className="px-2.5 py-1 text-[10px] font-sans font-bold bg-blue-600 hover:bg-blue-550 text-white rounded shadow-sm hover:shadow transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Save className="w-3 h-3" />
+                  <span>Save Notes</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Interactive Action Sequence Timeline Log */}
