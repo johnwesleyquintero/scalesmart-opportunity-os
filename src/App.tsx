@@ -5,7 +5,7 @@ import {
   Radio, Database, Code, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
   Sun, Moon, GripVertical, Search, Pencil,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle,
-  Copy
+  Copy, RotateCcw, SlidersHorizontal
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -196,6 +196,12 @@ export default function App() {
   // Sort state
   const [sortField, setSortField] = useState<keyof Opportunity | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Advanced Filtering states
+  const [filterPriority, setFilterPriority] = useState<string>("ALL");
+  const [filterTier, setFilterTier] = useState<string>("ALL");
+  const [filterSource, setFilterSource] = useState<string>("ALL");
+  const [filterRisk, setFilterRisk] = useState<string>("ALL");
 
   const handleSort = (field: keyof Opportunity) => {
     if (sortField === field) {
@@ -632,26 +638,71 @@ export default function App() {
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || o.companyName.toLowerCase().includes(q) || o.roleTitle.toLowerCase().includes(q) || (o.notes || "").toLowerCase().includes(q);
     
-    // Tab filter matching
-    if (filter === "ALL") return matchesSearch;
-    if (filter === "ACTIVE") return matchesSearch && !["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(o.status);
-    if (filter === "INTERVIEWING") return matchesSearch && o.status === "INTERVIEWING";
-    if (filter === "ACTION_REQUIRED") {
+    // Left side partition tab filter matching
+    let matchesPartition = true;
+    if (filter === "ACTIVE") {
+      matchesPartition = !["OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(o.status);
+    } else if (filter === "INTERVIEWING") {
+      matchesPartition = o.status === "INTERVIEWING";
+    } else if (filter === "ACTION_REQUIRED") {
       const risk = getRiskOfOpportunity(o);
-      return matchesSearch && risk.type !== "none";
+      matchesPartition = risk.type !== "none";
+    } else if (filter === "DORMANT") {
+      matchesPartition = ["DORMANT", "ARCHIVED"].includes(o.status);
     }
-    if (filter === "DORMANT") return matchesSearch && ["DORMANT", "ARCHIVED"].includes(o.status);
-    return matchesSearch;
+
+    // Advanced Sub-Filters:
+    const matchesPriority = filterPriority === "ALL" || o.priority === filterPriority;
+    const matchesTier = filterTier === "ALL" || o.tier === filterTier;
+    const matchesSource = filterSource === "ALL" || o.source === filterSource;
+    
+    let matchesRisk = true;
+    if (filterRisk !== "ALL") {
+      const risk = getRiskOfOpportunity(o);
+      if (filterRisk === "RISK_ONLY") {
+        matchesRisk = risk.type !== "none";
+      } else {
+        matchesRisk = risk.type === filterRisk.toLowerCase();
+      }
+    }
+
+    return matchesSearch && matchesPartition && matchesPriority && matchesTier && matchesSource && matchesRisk;
   });
 
   const sorted = [...filtered].sort((a, b) => {
     if (!sortField) return 0;
-    const valA = a[sortField] || "";
-    const valB = b[sortField] || "";
+
+    // Numerical Score Sorting (handle missing/undefined)
+    if (sortField === "score") {
+      const scoreA = a.score !== undefined ? a.score : -1;
+      const scoreB = b.score !== undefined ? b.score : -1;
+      if (scoreA === scoreB) return 0;
+      if (scoreA === -1) return 1; // missing goes bottom
+      if (scoreB === -1) return -1;
+      return sortDirection === "asc" ? scoreA - scoreB : scoreB - scoreA;
+    }
+
+    // Chronological/Date Sorting (dateApplied, lastActivityDate, nextActionDate)
+    if (sortField === "dateApplied" || sortField === "lastActivityDate" || sortField === "nextActionDate") {
+      const valA = a[sortField] || "";
+      const valB = b[sortField] || "";
+      if (!valA && !valB) return 0;
+      if (!valA) return 1; // empty dates go to bottom
+      if (!valB) return -1;
+      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    }
+
+    // Standard lexical string comparison (lowercase)
+    const valA = String(a[sortField] || "").toLowerCase();
+    const valB = String(b[sortField] || "").toLowerCase();
     if (valA < valB) return sortDirection === "asc" ? -1 : 1;
     if (valA > valB) return sortDirection === "asc" ? 1 : -1;
     return 0;
   });
+
+  const isAnyFilterActive = filterPriority !== "ALL" || filterTier !== "ALL" || filterSource !== "ALL" || filterRisk !== "ALL" || sortField !== null;
 
   // Handle keyboard shortcuts (Ctrl+\ and Ctrl+[) and list arrow key / Enter navigation
   useEffect(() => {
@@ -1137,6 +1188,143 @@ export default function App() {
                     </div>
                   );
                 })()}
+
+                {/* Advanced Controls Desk */}
+                <div className={`mb-4 p-3 rounded-lg border ${theme.bgCard} ${isDark ? "border-slate-800" : "border-neutral-250/50"} flex flex-col gap-3 font-sans`}>
+                  <div className="flex items-center justify-between border-b pb-2 select-none border-neutral-200/50 dark:border-slate-800/60">
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-bold tracking-wide">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500 dark:text-cyan-400" />
+                      <span className={isDark ? "text-slate-200" : "text-slate-800"}>ADVANCED CONTROLS DESK</span>
+                    </div>
+                    {isAnyFilterActive && (
+                      <button
+                        onClick={() => {
+                          setFilterPriority("ALL");
+                          setFilterTier("ALL");
+                          setFilterSource("ALL");
+                          setFilterRisk("ALL");
+                          setSortField(null);
+                          setSortDirection("asc");
+                          setToast({ message: "Reset the advanced filters and custom sorting desk successfully!", type: "success" });
+                        }}
+                        className={`text-[10px] font-mono flex items-center gap-1 px-1.5 py-0.5 rounded border transition-all cursor-pointer ${
+                          isDark 
+                            ? "bg-slate-900 border-rose-500/30 text-rose-400 hover:bg-rose-950/20" 
+                            : "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100"
+                        }`}
+                        title="Reset all search controls back to natural drag order"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>RESET CONTROLS</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 text-xs">
+                    {/* Sort Column field */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Sort Column:</span>
+                      <select
+                        value={sortField || "none"}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "none") {
+                            setSortField(null);
+                          } else {
+                            setSortField(val as keyof Opportunity);
+                          }
+                        }}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
+                      >
+                        <option value="none">📌 Drag-and-drop</option>
+                        <option value="dateApplied">📅 Date Applied</option>
+                        <option value="lastActivityDate">⏱️ Last Activity</option>
+                        <option value="nextActionDate">🎯 Next Action</option>
+                        <option value="companyName">🏢 Company Name</option>
+                        <option value="roleTitle">💼 Role Title</option>
+                        <option value="score">📈 WesBI Score</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Order select */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Sort Order:</span>
+                      <select
+                        value={sortDirection}
+                        onChange={(e) => setSortDirection(e.target.value as "asc" | "desc")}
+                        disabled={!sortField}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:opacity-40 disabled:cursor-not-allowed`}
+                      >
+                        <option value="asc">Ascending (A-Z / Oldest)</option>
+                        <option value="desc">Descending (Z-A / Newest)</option>
+                      </select>
+                    </div>
+
+                    {/* Priority sub filter */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Priority:</span>
+                      <select
+                        value={filterPriority}
+                        onChange={(e) => setFilterPriority(e.target.value)}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
+                      >
+                        <option value="ALL">All Priorities</option>
+                        <option value="P0">🚩 P0 (Critical)</option>
+                        <option value="P1">🚩 P1 (Medium)</option>
+                        <option value="P2">🚩 P2 (Standard)</option>
+                      </select>
+                    </div>
+
+                    {/* Tier Filter option */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Company Tier:</span>
+                      <select
+                        value={filterTier}
+                        onChange={(e) => setFilterTier(e.target.value)}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
+                      >
+                        <option value="ALL">All Tiers</option>
+                        <option value="T1">⭐ Tier 1 (Dream)</option>
+                        <option value="T2">⭐ Tier 2 (High Value)</option>
+                        <option value="T3">⭐ Tier 3 (Standard)</option>
+                      </select>
+                    </div>
+
+                    {/* Outreach channels source dropdown */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Channel:</span>
+                      <select
+                        value={filterSource}
+                        onChange={(e) => setFilterSource(e.target.value)}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
+                      >
+                        <option value="ALL">All Sources</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="OLJ">OLJ</option>
+                        <option value="Direct">Direct Outreach</option>
+                        <option value="Referral">Warm Referral</option>
+                        <option value="Funnel">Automation Funnel</option>
+                        <option value="Gmail">Gmail Signal</option>
+                      </select>
+                    </div>
+
+                    {/* Alert Flag filters */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold text-slate-450 dark:text-slate-400 font-mono">Alert Profiles:</span>
+                      <select
+                        value={filterRisk}
+                        onChange={(e) => setFilterRisk(e.target.value)}
+                        className={`p-1.5 rounded text-xs border ${theme.bgInput} cursor-pointer focus:outline-none focus:ring-1 focus:ring-sky-500`}
+                      >
+                        <option value="ALL">All Indicators</option>
+                        <option value="RISK_ONLY">⚠️ Active Red Flags</option>
+                        <option value="DEADLINE_MISSED">⚠️ Deadline Missed</option>
+                        <option value="NO_RESPONSE">⚠️ No Response &gt; 14d</option>
+                        <option value="UNCLEAR">⚠️ Unclear Next Action</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Main Spreadsheet grid of Targets list */}
                 {sorted.length === 0 ? (
