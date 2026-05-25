@@ -1061,6 +1061,21 @@ export default function App() {
                       <Download className="w-3.5 h-3.5" /> Export DB
                     </button>
                     <button
+                      onClick={triggerLiveScan}
+                      disabled={isConnecting}
+                      className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${
+                        isConnecting 
+                          ? "opacity-50 cursor-not-allowed" 
+                          : isDark 
+                            ? "bg-slate-900/85 border-emerald-500/30 text-emerald-400 hover:bg-slate-800 hover:text-emerald-300" 
+                            : "bg-emerald-50/70 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                      }`}
+                      title="Command Google Apps Script to run scanGmailSignals() live and fetch updated data"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isConnecting ? "animate-spin" : ""}`} />
+                      Data Sync
+                    </button>
+                    <button
                       onClick={openAddModal}
                       className="p-2 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold rounded flex items-center gap-1.5 tracking-tight transition shadow-xs cursor-pointer font-sans"
                     >
