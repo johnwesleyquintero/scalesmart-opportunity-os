@@ -5,7 +5,7 @@ import {
   Radio, Database, Code, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
   Sun, Moon, GripVertical, Search, Pencil,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle,
-  Copy, RotateCcw, SlidersHorizontal
+  Copy, RotateCcw, SlidersHorizontal, LayoutList
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -57,6 +57,16 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("scalesmart_dark_theme", String(isDark));
   }, [isDark]);
+
+  // Table padding list-density settings view preference
+  const [density, setDensity] = useState<"compact" | "comfortable">(() => {
+    const saved = localStorage.getItem("scalesmart_density");
+    return (saved as "compact" | "comfortable") || "comfortable";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("scalesmart_density", density);
+  }, [density]);
 
   // Notion Theme styling variables mapping
   const theme = isDark ? {
@@ -746,6 +756,14 @@ export default function App() {
           setToast({ message: "Switched to Signal Radar Queue [R]", type: "info" });
           return;
         }
+        if (e.key === "d" || e.key === "D") {
+          setDensity((prev) => {
+            const next = prev === "compact" ? "comfortable" : "compact";
+            setToast({ message: `Layout density: ${next.toUpperCase()} [D]`, type: "info" });
+            return next;
+          });
+          return;
+        }
         if (e.key === "?") {
           e.preventDefault();
           setIsShortcutModalOpen(true);
@@ -837,7 +855,12 @@ export default function App() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode, isShortcutModalOpen]);
+  }, [activeTab, sorted, focusedId, selectedId, isLeftSidebarOpen, isRightSidebarOpen, modalMode, isShortcutModalOpen, density]);
+
+  const thPad = density === "compact" ? "py-1.5 px-3" : "py-2.5 px-3";
+  const tdPad = density === "compact" ? "py-1 px-3" : "py-2 px-3";
+  const tdCheckboxPad = density === "compact" ? "py-1 px-2" : "py-2 px-2";
+  const tdDragPad = density === "compact" ? "py-0.5 px-2" : "py-1.5 px-2";
 
   return (
     <div className={`h-screen max-h-screen overflow-hidden flex flex-col font-sans transition-colors duration-150 select-none ${theme.bgApp}`} id="scalesmart-root">
@@ -871,6 +894,18 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setDensity((prev) => (prev === "compact" ? "comfortable" : "compact"))}
+            className={`p-1.5 rounded transition flex items-center gap-1.5 text-[10.5px] font-mono leading-none ${
+              isDark ? "hover:bg-[#2c2c2c] text-sky-400 hover:text-sky-300" : "hover:bg-[#eae9e6]/80 text-[#37352f]"
+            }`}
+            title={`Switch to ${density === "compact" ? "comfortable" : "compact"} layout (D)`}
+            id="density-toggle-btn"
+          >
+            <LayoutList className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline opacity-80 uppercase font-black tracking-tight">{density}</span>
+          </button>
+
           <button
             onClick={() => setIsShortcutModalOpen(true)}
             className={`p-1.5 rounded transition flex items-center gap-1 text-[10.5px] font-mono leading-none ${
@@ -1448,7 +1483,7 @@ export default function App() {
                   <table className={`w-full text-left text-xs border-collapse relative font-sans ${isDark ? "border-slate-855" : "border-[#eae9e6]"}`} id="opportunity-table">
                     <thead className="sticky top-0 z-20">
                       <tr className={`border-b select-none font-mono ${theme.thead}`}>
-                        <th className="py-2.5 px-3 w-8 text-center select-none">
+                        <th className={`${thPad} w-8 text-center select-none`}>
                           <input 
                             type="checkbox" 
                             className="cursor-pointer font-sans"
@@ -1462,29 +1497,29 @@ export default function App() {
                             }}
                           />
                         </th>
-                        <th className="py-2.5 px-3 w-6 text-center">Reorder</th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("companyName")}>
+                        <th className={`${thPad} w-6 text-center`}>Reorder</th>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("companyName")}>
                           🏢 Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("roleTitle")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("roleTitle")}>
                           💼 Role Title {sortField === "roleTitle" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("source")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("source")}>
                           🌐 Source {sortField === "source" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("tier")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("tier")}>
                           🚦 Tier {sortField === "tier" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("status")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("status")}>
                           🟢 Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("dateApplied")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("dateApplied")}>
                           📅 Applied {sortField === "dateApplied" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition" onClick={() => handleSort("priority")}>
+                        <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("priority")}>
                           🚩 Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}
                         </th>
-                        <th className="py-2.5 px-3 text-right">Actions</th>
+                        <th className={`${thPad} text-right`}>Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#eae9e6]/10 dark:divide-slate-855">
@@ -1529,7 +1564,7 @@ export default function App() {
                               draggingId === item.id
                                 ? (isDark ? "opacity-30 bg-slate-800 border-y-2 border-dashed border-sky-500 scale-[0.99]" : "opacity-30 bg-slate-100 border-y-2 border-dashed border-sky-400 scale-[0.99]")
                                 : dragOverId === item.id
-                                ? (isDark ? "bg-sky-550/15 border-b-2 border-sky-500 scale-[1.002]" : "bg-sky-50 border-b-2 border-sky-400 scale-[1.002]")
+                                ? (isDark ? "bg-sky-550/15 border-b-2 border-sky-500 scale-[1.002]" : "bg-sky-5 border-b-2 border-sky-400 scale-[1.002]")
                                 : isSelected 
                                 ? theme.selectedRow 
                                 : isFocused
@@ -1537,7 +1572,7 @@ export default function App() {
                                 : `${theme.hoverRow} ${isDark ? "bg-[#1d1d1d]" : "bg-white"}`
                             } ${isFocused ? "ring-2 ring-blue-500 ring-inset" : ""} ${draggingId ? "cursor-grabbing" : ""}`}
                           >
-                            <td className="py-2 px-2 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                            <td className={`${tdCheckboxPad} text-center align-middle`} onClick={(e) => e.stopPropagation()}>
                               <input 
                                 type="checkbox" 
                                 className="cursor-pointer"
@@ -1552,13 +1587,13 @@ export default function App() {
                               />
                             </td>
 
-                            <td className="py-1.5 px-2 text-center align-middle">
+                            <td className={`${tdDragPad} text-center align-middle`}>
                               <div className="flex items-center justify-center cursor-row-resize opacity-40 group-hover:opacity-100 transition">
                                 <GripVertical className="w-3.5 h-3.5" />
                               </div>
                             </td>
                             
-                            <td className="py-2 px-3 font-semibold break-all leading-relaxed">
+                            <td className={`${tdPad} font-semibold break-all leading-relaxed`}>
                               <div className="flex items-center gap-1.5">
                                 <span className={isDark ? "text-slate-100" : "text-[#37352f]"}>{item.companyName}</span>
                                 {risk.type !== "none" && (
@@ -1570,11 +1605,11 @@ export default function App() {
                               </div>
                             </td>
 
-                            <td className="py-2 px-3 break-all font-medium leading-relaxed max-w-xs">{item.roleTitle}</td>
+                            <td className={`${tdPad} break-all font-medium leading-relaxed max-w-xs`}>{item.roleTitle}</td>
                             
-                            <td className="py-2 px-3 font-mono text-[11px]">{item.source}</td>
+                            <td className={`${tdPad} font-mono text-[11px]`}>{item.source}</td>
                             
-                            <td className="py-2 px-3 font-mono text-center font-bold relative">
+                            <td className={`${tdPad} font-mono text-center font-bold relative`}>
                               <div className="relative inline-block group/tier">
                                 <span 
                                                                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
@@ -1628,12 +1663,12 @@ export default function App() {
                               </div>
                             </td>
 
-                            <td className="py-2 px-3 align-middle">
+                            <td className={`${tdPad} align-middle`}>
                               <span className={`px-1.5 py-0.5 rounded-[4px] font-mono text-[10px] uppercase font-bold tracking-tight inline-block ${
                                 item.status === "OFFER" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-black animate-pulse" :
                                 item.status === "INTERVIEWING" ? "bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold" :
                                 item.status === "ASSESSMENT_PENDING" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
-                                item.status === "REJECTED" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 line-through opacity-70" :
+                                item.status === "REJECTED" ? "bg-rose-500/10 text-rose-450 border border-rose-500/20 line-through opacity-70" :
                                 item.status === "APPLIED" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" :
                                 item.status === "NEW" ? "bg-slate-500/10 text-slate-400 border border-slate-700" :
                                 isDark ? "bg-purple-500/10 text-purple-400 border border-purple-500/25" : "bg-purple-50 text-purple-700 border border-purple-200"
@@ -1642,17 +1677,17 @@ export default function App() {
                               </span>
                             </td>
 
-                            <td className="py-2 px-3 align-middle font-mono text-[11px] text-slate-400 dark:text-slate-400 whitespace-nowrap">
+                            <td className={`${tdPad} align-middle font-mono text-[11px] text-slate-400 dark:text-slate-400 whitespace-nowrap`}>
                               {item.dateApplied || "—"}
                             </td>
 
-                            <td className="py-2 px-3 align-middle font-mono font-bold text-center">
+                            <td className={`${tdPad} align-middle font-mono font-bold text-center`}>
                               <span className={item.priority === "P0" ? "text-rose-500 font-extrabold" : "opacity-90"}>
                                 {item.priority}
                               </span>
                             </td>
 
-                            <td className="py-2 px-3 text-right">
+                            <td className={`${tdPad} text-right`}>
                               <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openEditModal(item); }}
@@ -1987,6 +2022,10 @@ export default function App() {
                     <div className="flex items-center justify-between">
                       <span className={`${theme.textSecondary}`}>Signal Radar Queue</span>
                       <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">R</kbd>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${theme.textSecondary}`}>Toggle Height Density</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold rounded border bg-neutral-100 border-neutral-300 dark:bg-slate-800 dark:border-slate-700 select-none">D</kbd>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className={`${theme.textSecondary}`}>Toggle Left Control Hub</span>
