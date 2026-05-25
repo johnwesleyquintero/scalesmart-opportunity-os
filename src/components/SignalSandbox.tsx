@@ -126,9 +126,9 @@ export default function SignalSandbox({
 
       let tierFallback: OpportunityTier = "T2";
       if (vaWords.test(sandboxEmailText)) {
-        tierFallback = "T1";
-      } else if (architectWords.test(sandboxEmailText)) {
         tierFallback = "T3";
+      } else if (architectWords.test(sandboxEmailText)) {
+        tierFallback = "T1";
       }
 
       // Dynamic Status Parsing

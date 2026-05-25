@@ -94,8 +94,8 @@ export const INITIAL_SIGNALS: GmailEmailSignal[] = [
 export const SANDBOX_TEMPLATES = [
   {
     company: "EcomBrands LLC",
-    role: "Junior Amazon VA (Tier 1)",
-    text: "From: HR Team <recruiting@ecombrands.com>\nSubject: Job Details: Junior Amazon VA & Data Entry Specialist\n\nHi Wesley,\nThank you for applying for our entry-level Amazon VA role. This position is a perfect Tier 1 Execution opportunity. It focuses on day-to-day operations: data entry for listings, manual inventory counts, basic product catalog spreadsheet entry, and Shopify/eBay listing upkeep following our existing SOP guidelines. The starting compensation is $7.50/hr on a part-time basis. Let's schedule a brief greeting call next Monday!"
+    role: "Junior Amazon VA (Tier 3)",
+    text: "From: HR Team <recruiting@ecombrands.com>\nSubject: Job Details: Junior Amazon VA & Data Entry Specialist\n\nHi Wesley,\nThank you for applying for our entry-level Amazon VA role. This position is a perfect Tier 3 Execution opportunity. It focuses on day-to-day operations: data entry for listings, manual inventory counts, basic product catalog spreadsheet entry, and Shopify/eBay listing upkeep following our existing SOP guidelines. The starting compensation is $7.50/hr on a part-time basis. Let's schedule a brief greeting call next Monday!"
   },
   {
     company: "SecuLife Operations",
@@ -104,12 +104,12 @@ export const SANDBOX_TEMPLATES = [
   },
   {
     company: "My Amazon Guy Agency",
-    role: "Systems Architect & Catalog Lead (Tier 3)",
-    text: "From: Account Director <partnerships@myamazonguy.com>\nSubject: Discussion: Senior Lead Amazon Catalog recovery & SOP architect (Tier 3)\n\nHi Wesley,\nWe saw your background restoring high-value listing escalations and designing bulk flat-file variation systems. We have a Tier 3 Systems / Architect role open requiring a true subject matter expert. You would be managing high-tier Seller Support escalations, doing deep catalog recovery, designing AI-assisted troubleshooting SOPs, and coordinating processes across multiple client accounts. Base compensation is $35/hr. Let's set up a technical discussion next week!"
+    role: "Systems Architect & Catalog Lead (Tier 1)",
+    text: "From: Account Director <partnerships@myamazonguy.com>\nSubject: Discussion: Senior Lead Amazon Catalog recovery & SOP architect (Tier 1)\n\nHi Wesley,\nWe saw your background restoring high-value listing escalations and designing bulk flat-file variation systems. We have a Tier 1 Systems / Architect role open requiring a true subject matter expert. You would be managing high-tier Seller Support escalations, doing deep catalog recovery, designing AI-assisted troubleshooting SOPs, and coordinating processes across multiple client accounts. Base compensation is $35/hr. Let's set up a technical discussion next week!"
   },
   {
     company: "ScaleSmart Consulting",
-    role: "E-commerce Operations consultant (Tier 3)",
+    role: "E-commerce Operations consultant (Tier 1)",
     text: "From: Managing Partner <consulting@scalesmart.ai>\nSubject: Proposal Agreement - Custom Google Sheets/Apps Script automation system\n\nHi Wesley,\nWe love your WesBI Cockpit dashboard system and custom Google Apps Script automation portfolio. We want to bring you on as an E-commerce Operations Architect consultant. Your scope will include auditing multi-brand order workflows, formulating process checklists, and building customized Apps Script reporting pipelines to keep inventories reconciled. Flat rate of $4,500/month. Standard onboarding begins next Thursday."
   }
 ];

@@ -6,7 +6,8 @@ export type OpportunityStatus =
   | "OFFER"
   | "REJECTED"
   | "DORMANT"
-  | "ARCHIVED";
+  | "ARCHIVED"
+  | (string & {});
 
 export type OpportunityTier = "T1" | "T2" | "T3";
 

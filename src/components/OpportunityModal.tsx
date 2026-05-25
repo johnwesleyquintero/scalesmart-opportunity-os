@@ -32,6 +32,7 @@ export default function OpportunityModal({
   const [formDateApplied, setFormDateApplied] = useState("");
   const [formNextActionDate, setFormNextActionDate] = useState("");
   const [formNotes, setFormNotes] = useState("");
+  const [isCustomStatus, setIsCustomStatus] = useState(false);
 
   // Populate form with item details if in edit mode
   useEffect(() => {
@@ -47,6 +48,8 @@ export default function OpportunityModal({
       setFormDateApplied(oppToEdit.dateApplied || "");
       setFormNextActionDate(oppToEdit.nextActionDate || "");
       setFormNotes(oppToEdit.notes || "");
+      const isCustom = !["NEW", "APPLIED", "ASSESSMENT_PENDING", "INTERVIEWING", "OFFER", "REJECTED", "DORMANT", "ARCHIVED"].includes(oppToEdit.status || "NEW");
+      setIsCustomStatus(isCustom);
     } else {
       // Reset to defaults for addition
       setFormCompany("");
@@ -60,6 +63,7 @@ export default function OpportunityModal({
       setFormDateApplied(new Date().toISOString().split("T")[0]);
       setFormNextActionDate("");
       setFormNotes("");
+      setIsCustomStatus(false);
     }
   }, [modalMode, oppToEdit]);
 
@@ -183,18 +187,45 @@ export default function OpportunityModal({
                   />
                 </div>
                 <div>
-                  <label className={`text-xs block mb-1 font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Status</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as OpportunityStatus)}
-                    className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono ${theme.bgInput}`}
-                  >
-                    {STATUS_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value} className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
-                        {opt.value === "ASSESSMENT_PENDING" ? "ASSESSMENT" : opt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className={`text-xs font-medium ${isDark ? "text-slate-400" : "text-[#787774]"}`}>Status</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomStatus(!isCustomStatus)}
+                      className="text-[10px] font-mono text-blue-500 hover:text-blue-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:underline cursor-pointer"
+                    >
+                      {isCustomStatus ? "Use Preset" : "+ Custom Status"}
+                    </button>
+                  </div>
+                  {isCustomStatus ? (
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. SCHEDULED INTERVIEW"
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value.toUpperCase())}
+                      className={`w-full border rounded p-2.5 focus:outline-none focus:border-blue-500 font-mono ${theme.bgInput}`}
+                    />
+                  ) : (
+                    <select
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value as OpportunityStatus)}
+                      className={`w-full border rounded p-2.5 focus:outline-none cursor-pointer font-mono ${theme.bgInput}`}
+                    >
+                      {STATUS_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value} className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                          {opt.value === "ASSESSMENT_PENDING" ? "ASSESSMENT" : opt.label}
+                        </option>
+                      ))}
+                      {![
+                        "NEW", "APPLIED", "ASSESSMENT_PENDING", "INTERVIEWING", "OFFER", "REJECTED", "DORMANT", "ARCHIVED"
+                      ].includes(formStatus) && (
+                        <option value={formStatus} className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                          ➡️ {formStatus} (CUSTOM)
+                        </option>
+                      )}
+                    </select>
+                  )}
                 </div>
 
                 <div>

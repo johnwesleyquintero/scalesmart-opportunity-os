@@ -202,6 +202,10 @@ export default function OpportunityDetails({
   const [compensation, setCompensation] = useState(3);
   const [urgency, setUrgency] = useState(3);
 
+  // Custom status editing states
+  const [isCustomEditing, setIsCustomEditing] = useState(false);
+  const [customStatusInput, setCustomStatusInput] = useState("");
+
   // Sync state when active opportunity changes
   useEffect(() => {
     if (selectedOpp) {
@@ -212,6 +216,8 @@ export default function OpportunityDetails({
       setLogInput("");
       setEditedNotes(selectedOpp.notes || "");
       setNotesTab("preview");
+      setCustomStatusInput(selectedOpp.status || "");
+      setIsCustomEditing(false);
     }
   }, [selectedOpp]);
 
@@ -372,21 +378,81 @@ export default function OpportunityDetails({
       <div className={`space-y-4 border-t ${theme.border} pt-4 text-xs`}>
         {/* Status selection */}
         <div>
-          <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block mb-1">Status Transition</label>
-          <select
-            value={selectedOpp.status}
-            onChange={(e) => onUpdateStatus(selectedOpp, e.target.value as OpportunityStatus)}
-            className={`w-full border rounded p-2.5 focus:outline-none font-medium cursor-pointer ${theme.bgInput}`}
-          >
-            <option value="NEW" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>NEW</option>
-            <option value="APPLIED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>APPLIED</option>
-            <option value="ASSESSMENT_PENDING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ASSESSMENT PENDING</option>
-            <option value="INTERVIEWING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>INTERVIEWING</option>
-            <option value="OFFER" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>OFFER</option>
-            <option value="REJECTED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>REJECTED</option>
-            <option value="DORMANT" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>DORMANT</option>
-            <option value="ARCHIVED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ARCHIVED</option>
-          </select>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono font-bold block">Status Transition</label>
+            <button
+              onClick={() => setIsCustomEditing(!isCustomEditing)}
+              className="text-[10px] font-mono text-blue-500 hover:text-blue-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              ⌨️ {isCustomEditing ? "Use Dropdown" : "Custom Status..."}
+            </button>
+          </div>
+
+          {isCustomEditing ? (
+            <div className="flex gap-1.5 items-center mt-1">
+              <input
+                type="text"
+                placeholder="Type status (e.g. SCHEDULED INTERVIEW)"
+                value={customStatusInput}
+                onChange={(e) => setCustomStatusInput(e.target.value)}
+                className={`flex-1 text-xs px-2.5 py-1.5 rounded border focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono ${theme.bgInput}`}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (customStatusInput.trim()) {
+                      onUpdateStatus(selectedOpp, customStatusInput.trim().toUpperCase());
+                      setIsCustomEditing(false);
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (customStatusInput.trim()) {
+                    onUpdateStatus(selectedOpp, customStatusInput.trim().toUpperCase());
+                    setIsCustomEditing(false);
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-mono font-bold text-[10px] transition cursor-pointer"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCustomEditing(false)}
+                className={`px-2 py-1.5 rounded text-[10px] font-mono border transition ${theme.bgButtonSec}`}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <select
+              value={selectedOpp.status}
+              onChange={(e) => {
+                onUpdateStatus(selectedOpp, e.target.value as OpportunityStatus);
+                setCustomStatusInput(e.target.value);
+              }}
+              className={`w-full border rounded p-2.5 focus:outline-none font-medium cursor-pointer ${theme.bgInput}`}
+            >
+              <option value="NEW" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>NEW</option>
+              <option value="APPLIED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>APPLIED</option>
+              <option value="ASSESSMENT_PENDING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ASSESSMENT PENDING</option>
+              <option value="INTERVIEWING" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>INTERVIEWING</option>
+              <option value="OFFER" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>OFFER</option>
+              <option value="REJECTED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>REJECTED</option>
+              <option value="DORMANT" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>DORMANT</option>
+              <option value="ARCHIVED" className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>ARCHIVED</option>
+              {![
+                "NEW", "APPLIED", "ASSESSMENT_PENDING", "INTERVIEWING", "OFFER", "REJECTED", "DORMANT", "ARCHIVED"
+              ].includes(selectedOpp.status) && (
+                <option value={selectedOpp.status} className={isDark ? "bg-[#202020] text-white" : "bg-white text-black"}>
+                  ➡️ {selectedOpp.status} (CUSTOM)
+                </option>
+              )}
+            </select>
+          )}
 
           {/* Quick Trigger Progress Pills */}
           <div className="flex flex-wrap gap-1 mt-2">

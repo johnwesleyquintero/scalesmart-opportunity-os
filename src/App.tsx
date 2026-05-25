@@ -1475,12 +1475,12 @@ export default function App() {
                             <td className="py-2 px-3 font-mono text-center font-bold relative">
                               <div className="relative inline-block group/tier">
                                 <span 
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
+                                                                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-help inline-block font-bold select-none ${
                                     item.tier === "T1" 
-                                      ? "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25" 
+                                      ? "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25" 
                                       : item.tier === "T2" 
                                       ? "text-amber-700 bg-amber-50 border border-amber-200 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/25"
-                                      : "text-rose-700 bg-rose-50 border border-rose-200 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25"
+                                      : "text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25"
                                   }`}
                                 >
                                   {item.tier}
@@ -1495,8 +1495,8 @@ export default function App() {
                                   <div className="flex items-center gap-1.5 mb-1.5 pb-1 border-b border-slate-500/10 dark:border-slate-800">
                                     {item.tier === "T1" ? (
                                       <>
-                                        <span className="text-emerald-500 font-bold font-mono text-[10px]">🟢 T1</span>
-                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Execution / VA Level</span>
+                                        <span className="text-rose-500 font-bold font-mono text-[10px]">🔴 T1</span>
+                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Systems / Architect</span>
                                       </>
                                     ) : item.tier === "T2" ? (
                                       <>
@@ -1505,16 +1505,16 @@ export default function App() {
                                       </>
                                     ) : (
                                       <>
-                                        <span className="text-rose-500 font-bold font-mono text-[10px]">🔴 T3</span>
-                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Systems / Architect</span>
+                                        <span className="text-emerald-500 font-bold font-mono text-[10px]">🟢 T3</span>
+                                        <span className="font-sans font-black text-[9.5px] uppercase tracking-wider">Execution / VA Level</span>
                                       </>
                                     )}
                                   </div>
                                   
                                   <p className={`text-[10.5px] leading-relaxed font-sans font-medium ${isDark ? "text-slate-400" : "text-neutral-600"}`}>
-                                    {item.tier === "T1" && "Simple operations, data entry, distributor research, basic Amazon/Shopify catalog execution tasks, following strict SOPs."}
+                                    {item.tier === "T1" && "Strategic agency leaders, backend Amazon recovery, flat-file variation engineering, customized App Script automation & SOP playbook design."}
                                     {item.tier === "T2" && "Amazon Operations, active catalog health audits, basic PPC, inventory coordination, Shopify/Amazon hybrid roles."}
-                                    {item.tier === "T3" && "Strategic agency leaders, backend Amazon recovery, flat-file variation engineering, customized App Script automation & SOP playbook design."}
+                                    {item.tier === "T3" && "Simple operations, data entry, distributor research, basic Amazon/Shopify catalog execution tasks, following strict SOPs."}
                                   </p>
                                   
                                   {/* Triangle Caret indicator */}
@@ -1533,7 +1533,8 @@ export default function App() {
                                 item.status === "ASSESSMENT_PENDING" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" :
                                 item.status === "REJECTED" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 line-through opacity-70" :
                                 item.status === "APPLIED" ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" :
-                                "bg-slate-500/10 text-slate-400 border border-slate-700"
+                                item.status === "NEW" ? "bg-slate-500/10 text-slate-400 border border-slate-700" :
+                                isDark ? "bg-purple-500/10 text-purple-400 border border-purple-500/25" : "bg-purple-50 text-purple-700 border border-purple-200"
                               }`}>
                                 {item.status === "ASSESSMENT_PENDING" ? "ASSESSMENT" : item.status}
                               </span>
