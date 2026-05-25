@@ -27,6 +27,14 @@ import { getRiskOfOpportunity } from "./utils";
 
 type FilterType = "ALL" | "ACTIVE" | "INTERVIEWING" | "ACTION_REQUIRED" | "DORMANT";
 
+export const getTodayString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function App() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>(() => {
     const saved = localStorage.getItem("scalesmart_opportunities_mvp");
@@ -122,7 +130,7 @@ export default function App() {
   const handleBulkStatus = (nextStatus: OpportunityStatus) => {
     const updatedList = opportunities.map((o) => {
       if (selectedRowIds.includes(o.id)) {
-        return { ...o, status: nextStatus, lastActivityDate: "2026-05-24" };
+        return { ...o, status: nextStatus, lastActivityDate: getTodayString() };
       }
       return o;
     });
@@ -137,7 +145,7 @@ export default function App() {
   const handleBulkTier = (nextTier: OpportunityTier) => {
     const updatedList = opportunities.map((o) => {
       if (selectedRowIds.includes(o.id)) {
-        return { ...o, tier: nextTier, lastActivityDate: "2026-05-24" };
+        return { ...o, tier: nextTier, lastActivityDate: getTodayString() };
       }
       return o;
     });
@@ -152,7 +160,7 @@ export default function App() {
   const handleBulkPriority = (nextPriority: Priority) => {
     const updatedList = opportunities.map((o) => {
       if (selectedRowIds.includes(o.id)) {
-        return { ...o, priority: nextPriority, lastActivityDate: "2026-05-24" };
+        return { ...o, priority: nextPriority, lastActivityDate: getTodayString() };
       }
       return o;
     });
@@ -405,7 +413,7 @@ export default function App() {
         link: formData.link,
         dateApplied: formData.dateApplied,
         nextActionDate: formData.nextActionDate,
-        lastActivityDate: "2026-05-24",
+        lastActivityDate: getTodayString(),
         notes: formData.notes
       };
       
@@ -427,7 +435,7 @@ export default function App() {
         link: formData.link,
         dateApplied: formData.dateApplied,
         nextActionDate: formData.nextActionDate,
-        lastActivityDate: "2026-05-24",
+        lastActivityDate: getTodayString(),
         notes: formData.notes
       };
       
@@ -468,7 +476,7 @@ export default function App() {
     const updated: Opportunity = {
       ...opp,
       status: nextStatus,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
@@ -482,7 +490,7 @@ export default function App() {
     const updated: Opportunity = {
       ...opp,
       priority: p,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
@@ -496,7 +504,7 @@ export default function App() {
     const updated: Opportunity = {
       ...opp,
       tier: t,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
@@ -536,8 +544,8 @@ export default function App() {
       category: signal.detectedStatus === "ASSESSMENT_PENDING" ? "Technical Assessment" : signal.detectedStatus === "INTERVIEWING" ? "Active Loop" : "Funnel",
       status: signal.detectedStatus,
       priority: signal.detectedStatus === "INTERVIEWING" ? "P0" : "P1",
-      dateApplied: "2026-05-24",
-      lastActivityDate: "2026-05-24",
+      dateApplied: getTodayString(),
+      lastActivityDate: getTodayString(),
       notes: signal.snippet
     };
 
@@ -1101,8 +1109,8 @@ export default function App() {
                   const pctRejected = (countByStatus("REJECTED") / totalOppsCount) * 100;
                   const pctDormant = ((countByStatus("DORMANT") + countByStatus("ARCHIVED")) / totalOppsCount) * 100;
 
-                  // Use real current date
-                  const todayStr = new Date().toISOString().split("T")[0];
+                  // Use real current date in local timezone to match browser calendar select
+                  const todayStr = getTodayString();
                   // Let's count items that have dateApplied === todayStr AND status is not NEW
                   const workedToday = opportunities.filter(o => 
                     o.dateApplied === todayStr && 
@@ -1159,6 +1167,15 @@ export default function App() {
                               style={{ width: `${Math.min((appliedTodayCount / 3) * 100, 100)}%` }}
                             />
                           </div>
+
+                          {workedToday.length > 0 && (
+                            <div className="mt-2.5 text-[9px] font-mono leading-normal select-none">
+                              <span className="text-slate-400 block uppercase font-bold tracking-wider mb-0.5">Counted Today:</span>
+                              <span className={`${isDark ? "text-sky-300" : "text-blue-600"} break-all`}>
+                                {workedToday.map((o) => `${o.companyName} (${o.status === "ASSESSMENT_PENDING" ? "ASSESSMENT" : o.status})`).join(", ")}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <p className={`text-[10.5px] leading-relaxed select-none ${theme.textSecondary}`}>
