@@ -5,7 +5,7 @@ import {
   Copy, Check, ChevronDown, ChevronUp, PlusCircle, History, Trash2, Gauge,
   Save, Eye
 } from "lucide-react";
-import { getRiskOfOpportunity } from "../utils";
+import { getRiskOfOpportunity, getTodayString } from "../utils";
 
 // Pristine Inline Markdown Parsed Stream Render Engine
 function parseInlineElements(text: string): React.ReactNode {
@@ -237,7 +237,7 @@ export default function OpportunityDetails({
     const updatedOpp: Opportunity = {
       ...selectedOpp,
       notes: editedNotes,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     onUpdateOpportunity(updatedOpp);
     setNotesTab("preview");
@@ -266,7 +266,7 @@ export default function OpportunityDetails({
       automationScore: automation,
       compensationScore: compensation,
       urgencyScore: urgency,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     onUpdateOpportunity(updated);
     setIsScorecardOpen(false);
@@ -291,7 +291,7 @@ export default function OpportunityDetails({
     const updatedOpp: Opportunity = {
       ...selectedOpp,
       logs: updatedLogs,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
 
     onUpdateOpportunity(updatedOpp);
@@ -304,7 +304,7 @@ export default function OpportunityDetails({
     const updatedOpp: Opportunity = {
       ...selectedOpp,
       logs: updatedLogs,
-      lastActivityDate: "2026-05-24"
+      lastActivityDate: getTodayString()
     };
     onUpdateOpportunity(updatedOpp);
   };

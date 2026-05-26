@@ -23,17 +23,9 @@ import OpportunityModal from "./components/OpportunityModal";
 import OpportunityDetails from "./components/OpportunityDetails";
 import AppsScriptConnector from "./components/AppsScriptConnector";
 import SignalSandbox from "./components/SignalSandbox";
-import { getRiskOfOpportunity } from "./utils";
+import { getRiskOfOpportunity, getTodayString } from "./utils";
 
 type FilterType = "ALL" | "ACTIVE" | "INTERVIEWING" | "ACTION_REQUIRED" | "DORMANT";
-
-export const getTodayString = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 export default function App() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>(() => {

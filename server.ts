@@ -26,6 +26,8 @@ async function startServer() {
     }
 
     try {
+      const todayStr = new Date().toISOString().split("T")[0];
+
       // Lazy-load @google/genai module
       const { GoogleGenAI, Type } = await import("@google/genai");
       const ai = new GoogleGenAI({
@@ -78,7 +80,7 @@ ${text}
               },
               nextActionDate: {
                 type: Type.STRING,
-                description: "If an explicit deadline, interview date or action limit is resolved from text, format as YYYY-MM-DD. If relative (e.g., 'next Tuesday'), resolve it assuming today is 2026-05-24. Otherwise, return 'No planned action'."
+                description: `If an explicit deadline, interview date or action limit is resolved from text, format as YYYY-MM-DD. If relative (e.g., 'next Tuesday'), resolve it assuming today is ${todayStr}. Otherwise, return 'No planned action'.`
               },
               salary: {
                 type: Type.STRING,
