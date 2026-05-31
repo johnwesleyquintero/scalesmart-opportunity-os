@@ -213,6 +213,7 @@ export default function App() {
   const [filterTier, setFilterTier] = useState<string>("ALL");
   const [filterSource, setFilterSource] = useState<string>("ALL");
   const [filterRisk, setFilterRisk] = useState<string>("ALL");
+  const [filterHighRated, setFilterHighRated] = useState<boolean>(false);
 
   const handleSort = (field: keyof Opportunity) => {
     if (sortField === field) {
@@ -476,13 +477,33 @@ export default function App() {
   };
 
   const updateStatus = (opp: Opportunity, nextStatus: OpportunityStatus) => {
+    const prevStatus = opp.status;
+    if (prevStatus === nextStatus) return;
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      date: new Date().toLocaleDateString(undefined, { 
+        month: "short", 
+        day: "numeric", 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      }),
+      text: `Status progressed from "${prevStatus}" to "${nextStatus}".`
+    };
+
     const updated: Opportunity = {
       ...opp,
       status: nextStatus,
+      logs: [newLog, ...(opp.logs || [])],
       lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
+
+    setToast({
+      message: `Progressed status to ${nextStatus}. History log auto-created!`,
+      type: "success"
+    });
 
     if (appsScriptUrl.trim()) {
       pushLedgerToSheets(updatedList, true).catch(() => {});
@@ -490,13 +511,33 @@ export default function App() {
   };
 
   const updatePriority = (opp: Opportunity, p: Priority) => {
+    const prevPriority = opp.priority;
+    if (prevPriority === p) return;
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      date: new Date().toLocaleDateString(undefined, { 
+        month: "short", 
+        day: "numeric", 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      }),
+      text: `Priority updated from "${prevPriority}" to "${p}".`
+    };
+
     const updated: Opportunity = {
       ...opp,
       priority: p,
+      logs: [newLog, ...(opp.logs || [])],
       lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
+
+    setToast({
+      message: `Priority shifted to ${p}. History log auto-created!`,
+      type: "success"
+    });
 
     if (appsScriptUrl.trim()) {
       pushLedgerToSheets(updatedList, true).catch(() => {});
@@ -504,13 +545,33 @@ export default function App() {
   };
 
   const updateTier = (opp: Opportunity, t: OpportunityTier) => {
+    const prevTier = opp.tier;
+    if (prevTier === t) return;
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      date: new Date().toLocaleDateString(undefined, { 
+        month: "short", 
+        day: "numeric", 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      }),
+      text: `Tier updated from "${prevTier}" to "${t}".`
+    };
+
     const updated: Opportunity = {
       ...opp,
       tier: t,
+      logs: [newLog, ...(opp.logs || [])],
       lastActivityDate: getTodayString()
     };
     const updatedList = opportunities.map((o) => (o.id === opp.id ? updated : o));
     setOpportunities(updatedList);
+
+    setToast({
+      message: `Tier shifted to ${t}. History log auto-created!`,
+      type: "success"
+    });
 
     if (appsScriptUrl.trim()) {
       pushLedgerToSheets(updatedList, true).catch(() => {});
@@ -666,6 +727,7 @@ export default function App() {
     const matchesPriority = filterPriority === "ALL" || o.priority === filterPriority;
     const matchesTier = filterTier === "ALL" || o.tier === filterTier;
     const matchesSource = filterSource === "ALL" || o.source === filterSource;
+    const matchesHighRated = !filterHighRated || (o.score !== undefined && o.score >= 75);
     
     let matchesRisk = true;
     if (filterRisk !== "ALL") {
@@ -677,7 +739,7 @@ export default function App() {
       }
     }
 
-    return matchesSearch && matchesPartition && matchesPriority && matchesTier && matchesSource && matchesRisk;
+    return matchesSearch && matchesPartition && matchesPriority && matchesTier && matchesSource && matchesRisk && matchesHighRated;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -713,7 +775,7 @@ export default function App() {
     return 0;
   });
 
-  const isAnyFilterActive = filterPriority !== "ALL" || filterTier !== "ALL" || filterSource !== "ALL" || filterRisk !== "ALL" || sortField !== null;
+  const isAnyFilterActive = filterPriority !== "ALL" || filterTier !== "ALL" || filterSource !== "ALL" || filterRisk !== "ALL" || filterHighRated || sortField !== null;
 
   // Handle keyboard shortcuts (Ctrl+\ and Ctrl+[) and list arrow key / Enter navigation
   useEffect(() => {
@@ -1146,6 +1208,101 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* 1-Click Fast Slicer Preset Badges */}
+                <div className="flex flex-wrap items-center gap-2 mb-5 bg-slate-100/50 dark:bg-slate-900/30 p-2.5 rounded-xl border border-neutral-250/50 dark:border-slate-800/60 font-mono text-[10px]">
+                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider select-none shrink-0 border-r pr-2 border-neutral-300 dark:border-slate-800 flex items-center gap-1">
+                    <SlidersHorizontal className="w-3 h-3 text-blue-500" /> Segment Slices
+                  </span>
+                  
+                  {/* Preset 1: High Priority (P0) */}
+                  <button
+                    onClick={() => setFilterPriority(filterPriority === "P0" ? "ALL" : "P0")}
+                    className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 cursor-pointer border ${
+                      filterPriority === "P0"
+                        ? "bg-rose-500/10 border-rose-500/40 text-rose-500 font-bold dark:bg-rose-500/15"
+                        : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-500/10"
+                    }`}
+                  >
+                    <Flag className="w-3 h-3 text-rose-500" />
+                    <span>P0 Priority</span>
+                    <span className="opacity-60">({opportunities.filter(o => o.priority === "P0").length})</span>
+                  </button>
+
+                  {/* Preset 2: Tier-1 Systems */}
+                  <button
+                    onClick={() => setFilterTier(filterTier === "T1" ? "ALL" : "T1")}
+                    className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 cursor-pointer border ${
+                      filterTier === "T1"
+                        ? "bg-indigo-500/10 border-indigo-500/40 text-indigo-500 dark:text-indigo-400 font-bold dark:bg-indigo-500/15"
+                        : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-500/10"
+                    }`}
+                  >
+                    <Layers className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
+                    <span>Tier-1 Systems</span>
+                    <span className="opacity-60">({opportunities.filter(o => o.tier === "T1").length})</span>
+                  </button>
+
+                  {/* Preset 3: Active Alerts */}
+                  <button
+                    onClick={() => setFilterRisk(filterRisk === "RISK_ONLY" ? "ALL" : "RISK_ONLY")}
+                    className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 cursor-pointer border ${
+                      filterRisk === "RISK_ONLY"
+                        ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold dark:bg-amber-500/15 animate-pulse"
+                        : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-500/10"
+                    }`}
+                  >
+                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                    <span>Radar Alerts</span>
+                    <span className="opacity-60">({opportunities.filter(o => getRiskOfOpportunity(o).type !== "none").length})</span>
+                  </button>
+
+                  {/* Preset 4: LinkedIn Sourced */}
+                  <button
+                    onClick={() => setFilterSource(filterSource === "LinkedIn" ? "ALL" : "LinkedIn")}
+                    className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 cursor-pointer border ${
+                      filterSource === "LinkedIn"
+                        ? "bg-sky-500/10 border-sky-500/40 text-sky-600 dark:text-sky-400 font-bold dark:bg-sky-500/15"
+                        : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-500/10"
+                    }`}
+                  >
+                    <Globe className="w-3 h-3 text-sky-500 dark:text-sky-400" />
+                    <span>LinkedIn Sourced</span>
+                    <span className="opacity-60">({opportunities.filter(o => o.source === "LinkedIn").length})</span>
+                  </button>
+
+                  {/* Preset 5: Premium Evaluated (Score >= 75) */}
+                  <button
+                    onClick={() => setFilterHighRated(!filterHighRated)}
+                    className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 cursor-pointer border ${
+                      filterHighRated
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold dark:bg-emerald-500/15"
+                        : "bg-transparent border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-500/10"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-500 dark:text-emerald-450" />
+                    <span>Premium Rated (Score ≥ 75)</span>
+                    <span className="opacity-60">({opportunities.filter(o => o.score !== undefined && o.score >= 75).length})</span>
+                  </button>
+
+                  {/* Reset/Clear All when filters are active */}
+                  {isAnyFilterActive && (
+                    <button
+                      onClick={() => {
+                        setFilterPriority("ALL");
+                        setFilterTier("ALL");
+                        setFilterSource("ALL");
+                        setFilterRisk("ALL");
+                        setFilterHighRated(false);
+                        setSortField(null);
+                        setToast({ message: "Cleared all segment slices!", type: "info" });
+                      }}
+                      className="ml-auto px-2 py-0.5 rounded cursor-pointer bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 dark:text-rose-400 border border-rose-500/30 transition-all text-[9px] font-bold uppercase"
+                    >
+                      ✕ Clear Slice
+                    </button>
+                  )}
+                </div>
+
                 {/* Stacked visual status indicator profile with Daily Quota Stats */}
                 {opportunities.length > 0 && (() => {
                   const totalOppsCount = opportunities.length || 1;
@@ -1365,6 +1522,7 @@ export default function App() {
                           setFilterTier("ALL");
                           setFilterSource("ALL");
                           setFilterRisk("ALL");
+                          setFilterHighRated(false);
                           setSortField(null);
                           setSortDirection("asc");
                           setToast({ message: "Reset the advanced filters and custom sorting desk successfully!", type: "success" });

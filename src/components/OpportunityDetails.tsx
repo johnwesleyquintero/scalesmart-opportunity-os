@@ -557,9 +557,76 @@ export default function OpportunityDetails({
               </div>
             </div>
 
-            <p className={`text-[10px] mt-2 mb-3 leading-relaxed ${theme.textSecondary}`}>
+            <p className={`text-[10px] mt-2 mb-2 leading-relaxed ${theme.textSecondary}`}>
               Weighted: 25% SOP manual clarity, 25% Automation potential, 30% Compensation structure, 20% Urgency.
             </p>
+
+            {/* Always-visible visual scorecard breakdown progress meters */}
+            <div 
+              onClick={() => { if (!isScorecardOpen) setIsScorecardOpen(true); }}
+              className={`space-y-2 mt-2 mb-3 p-2.5 rounded-lg border transition-all cursor-pointer ${
+                isDark 
+                  ? "bg-slate-900/40 border-slate-800/60 hover:bg-slate-900/70" 
+                  : "bg-neutral-100/30 border-neutral-200 hover:bg-v-50/10 hover:bg-slate-100/60"
+              }`}
+              title="Click to tweak matrix weights directly"
+            >
+              {/* SOP Progress Bar */}
+              <div>
+                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-0.5">
+                  <span className="font-bold flex items-center gap-1">🛠️ SOP ALIGNMENT</span>
+                  <span className="font-bold text-sky-400">{sop}/5</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-sky-450 dark:bg-sky-400 h-full rounded-full transition-all duration-300" 
+                    style={{ width: `${(sop / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Automation Progress Bar */}
+              <div>
+                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-0.5">
+                  <span className="font-bold flex items-center gap-1">⚡ AUTOMATION COMPAT</span>
+                  <span className="font-bold text-amber-500 dark:text-amber-400">{automation}/5</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-amber-500 dark:bg-amber-400 h-full rounded-full transition-all duration-300" 
+                    style={{ width: `${(automation / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Compensation Progress Bar */}
+              <div>
+                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-0.5">
+                  <span className="font-bold flex items-center gap-1">💰 FINANCIAL COMP TIER</span>
+                  <span className="font-bold text-emerald-500 dark:text-emerald-400">{compensation}/5</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-emerald-500 dark:bg-emerald-400 h-full rounded-full transition-all duration-300" 
+                    style={{ width: `${(compensation / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Urgency Progress Bar */}
+              <div>
+                <div className="flex justify-between text-[9px] font-mono text-slate-500 mb-0.5">
+                  <span className="font-bold flex items-center gap-1">🎯 OUTREACH URGENCY</span>
+                  <span className="font-bold text-rose-500 dark:text-rose-450">{urgency}/5</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-rose-500 dark:bg-rose-450 h-full rounded-full transition-all duration-300" 
+                    style={{ width: `${(urgency / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
 
             <button
               onClick={() => setIsScorecardOpen(!isScorecardOpen)}
@@ -567,7 +634,7 @@ export default function OpportunityDetails({
                 isDark ? "bg-slate-900 border-slate-800 hover:bg-slate-850" : "bg-white border-neutral-200 hover:bg-neutral-50"
               }`}
             >
-              <span>{isScorecardOpen ? "Hide Triage Matrix Weights" : "Tweak Matrix Weights"}</span>
+              <span>{isScorecardOpen ? "Hide Interactive Sliders" : "Slide & Adjust Priorities"}</span>
               {isScorecardOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
 
@@ -664,6 +731,29 @@ export default function OpportunityDetails({
                     {urgency === 5 && "Immediate (Urgent challenge/offer deadline!)"}
                   </span>
                 </div>
+
+                {/* Live Preview Box */}
+                {(() => {
+                  const liveScore = Math.round(((sop * 0.25) + (automation * 0.25) + (compensation * 0.3) + (urgency * 0.2)) * 20);
+                  const isModified = liveScore !== (selectedOpp.score ?? 0);
+                  return (
+                    <div className={`p-2.5 rounded-lg border text-xs font-mono flex items-center justify-between ${
+                      isDark ? "bg-[#151515] border-slate-800" : "bg-neutral-100/50 border-neutral-200"
+                    }`}>
+                      <span className="text-slate-500 dark:text-slate-400">Live Computed Score:</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-bold ${isDark ? "text-cyan-400" : "text-blue-650"}`}>
+                          {liveScore} / 100
+                        </span>
+                        {isModified && (
+                          <span className="text-[8px] px-1 py-0.2 bg-amber-500/10 text-amber-550 dark:text-amber-400 border border-amber-550/20 dark:border-amber-500/20 rounded font-bold uppercase tracking-wider animate-pulse">
+                            MODIFIED
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <button
                   onClick={handleSaveScorecard}
