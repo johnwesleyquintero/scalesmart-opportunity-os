@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Code, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Code, RefreshCw, CheckCircle2, Building2, Briefcase, Layers, Activity, Coins } from "lucide-react";
 import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../types";
 import { SANDBOX_TEMPLATES, STATUS_OPTIONS, PRIORITY_OPTIONS } from "../constants";
 
@@ -387,32 +387,37 @@ export default function SignalSandbox({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-1 border-t border-inherit opacity-90">
                 {sandboxHeuristicMatches.company && (
-                  <div className="flex items-start gap-1">
-                    <span className="opacity-60 shrink-0 font-bold">🏢 Match:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 opacity-72 text-amber-500 shrink-0" />
+                    <span className="opacity-60 font-bold">Match:</span>
                     <span className="break-all">{sandboxHeuristicMatches.company}</span>
                   </div>
                 )}
                 {sandboxHeuristicMatches.role && (
-                  <div className="flex items-start gap-1">
-                    <span className="opacity-60 shrink-0 font-bold">💼 Role:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 opacity-72 text-amber-500 shrink-0" />
+                    <span className="opacity-60 font-bold">Role:</span>
                     <span className="break-all">{sandboxHeuristicMatches.role}</span>
                   </div>
                 )}
                 {sandboxHeuristicMatches.status && (
-                  <div className="flex items-start gap-1">
-                    <span className="opacity-60 shrink-0 font-bold">🚦 Status:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 opacity-72 text-amber-500 shrink-0" />
+                    <span className="opacity-60 font-bold">Status:</span>
                     <span className="break-all">{sandboxHeuristicMatches.status}</span>
                   </div>
                 )}
                 {sandboxHeuristicMatches.tier && (
-                  <div className="flex items-start gap-1">
-                    <span className="opacity-60 shrink-0 font-bold">🚦 Tier:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 opacity-72 text-amber-500 shrink-0" />
+                    <span className="opacity-60 font-bold">Tier:</span>
                     <span className="break-all">{sandboxHeuristicMatches.tier}</span>
                   </div>
                 )}
                 {sandboxHeuristicMatches.salary && (
-                  <div className="flex items-start gap-1">
-                    <span className="opacity-60 shrink-0 font-bold">💰 Salary:</span>
+                  <div className="flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 opacity-72 text-amber-500 shrink-0" />
+                    <span className="opacity-60 font-bold">Salary:</span>
                     <span className="break-all">{sandboxHeuristicMatches.salary}</span>
                   </div>
                 )}

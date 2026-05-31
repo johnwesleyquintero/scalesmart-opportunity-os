@@ -5,7 +5,8 @@ import {
   Radio, Database, Code, RefreshCw, Send, CheckCircle2, Info, Layers, Download,
   Sun, Moon, GripVertical, Search, Pencil,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle,
-  Copy, RotateCcw, SlidersHorizontal, LayoutList
+  Copy, RotateCcw, SlidersHorizontal, LayoutList,
+  Building2, Briefcase, Globe, Activity, Calendar, Flag, AlertCircle, Archive, Target, Sparkles, Files, MessageSquare, Zap
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -999,47 +1000,62 @@ export default function App() {
                     <div className="space-y-1 font-mono">
                       <button
                         onClick={() => setFilter("ALL")}
-                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition cursor-pointer ${
                           filter === "ALL" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                         }`}
                       >
-                        <span>🗂️ ALL TARGETS</span>
+                        <span className="flex items-center gap-1.5">
+                          <Files className="w-3.5 h-3.5 opacity-80" />
+                          <span>ALL TARGETS</span>
+                        </span>
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numAll}</span>
                       </button>
                       <button
                         onClick={() => setFilter("ACTIVE")}
-                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition cursor-pointer ${
                           filter === "ACTIVE" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                         }`}
                       >
-                        <span>⚡ ACTIVE PIPELINE</span>
+                        <span className="flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-500" />
+                          <span>ACTIVE PIPELINE</span>
+                        </span>
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numActive}</span>
                       </button>
                       <button
                         onClick={() => setFilter("INTERVIEWING")}
-                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition cursor-pointer ${
                           filter === "INTERVIEWING" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                         }`}
                       >
-                        <span>💬 ACTIVE LOOPS</span>
+                        <span className="flex items-center gap-1.5">
+                          <MessageSquare className="w-3.5 h-3.5 text-sky-400" />
+                          <span>ACTIVE LOOPS</span>
+                        </span>
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numInterviewing}</span>
                       </button>
                       <button
                         onClick={() => setFilter("ACTION_REQUIRED")}
-                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition cursor-pointer ${
                           filter === "ACTION_REQUIRED" ? "text-rose-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                         }`}
                       >
-                        <span>⚠️ ALERTS PENDING</span>
+                        <span className="flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                          <span>ALERTS PENDING</span>
+                        </span>
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border border-rose-500/10 text-rose-400 bg-rose-500/5`}>{numActionRequired}</span>
                       </button>
                       <button
                         onClick={() => setFilter("DORMANT")}
-                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition ${
+                        className={`w-full flex items-center justify-between text-[11px] py-1 px-1.5 rounded transition cursor-pointer ${
                           filter === "DORMANT" ? "text-blue-500 font-bold" : `${theme.textSecondary} hover:text-sky-400`
                         }`}
                       >
-                        <span>💤 ARCHIVES</span>
+                        <span className="flex items-center gap-1.5">
+                          <Archive className="w-3.5 h-3.5 opacity-70" />
+                          <span>ARCHIVES</span>
+                        </span>
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numDormant}</span>
                       </button>
                     </div>
@@ -1164,11 +1180,21 @@ export default function App() {
                       <div className={`p-4 rounded-lg border ${theme.bgCard} flex flex-col justify-between ${isDark ? "border-slate-800" : "border-neutral-250/50"}`}>
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-[10px] font-mono font-bold tracking-wider text-slate-500 uppercase">
-                              🎯 DAILY RUN-RATE OUTREACH
+                            <span className="text-[10px] font-mono font-bold tracking-wider text-slate-500 uppercase flex items-center gap-1">
+                              <Target className="w-3.5 h-3.5 text-blue-500" /> DAILY RUN-RATE OUTREACH
                             </span>
-                            <span className={`text-xs ${theme.textPrimary} font-bold leading-tight`}>
-                              {quotaMet ? "🚀 Daily Target Secured" : "⚡ Pipeline Quota"}
+                            <span className={`text-xs ${theme.textPrimary} font-bold leading-tight flex items-center gap-1 mt-0.5`}>
+                              {quotaMet ? (
+                                <span className="flex items-center gap-1 text-emerald-500">
+                                  <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                  Daily Target Secured
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-amber-500">
+                                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                  Pipeline Quota
+                                </span>
+                              )}
                             </span>
                           </div>
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase select-none ${
@@ -1491,25 +1517,46 @@ export default function App() {
                         </th>
                         <th className={`${thPad} w-6 text-center hidden sm:table-cell`}>Reorder</th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("companyName")}>
-                          🏢 Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Building2 className={`w-3.5 h-3.5 shrink-0 ${isDark ? "text-cyan-400" : "text-blue-500"}`} />
+                            <span>Company Name {sortField === "companyName" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("roleTitle")}>
-                          💼 Role Title {sortField === "roleTitle" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Briefcase className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span>Role Title {sortField === "roleTitle" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden md:table-cell`} onClick={() => handleSort("source")}>
-                          🌐 Source {sortField === "source" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Globe className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span>Source {sortField === "source" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden sm:table-cell`} onClick={() => handleSort("tier")}>
-                          🚦 Tier {sortField === "tier" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Layers className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <span>Tier {sortField === "tier" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition`} onClick={() => handleSort("status")}>
-                          🟢 Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Activity className="w-3.5 h-3.5 text-violet-550 shrink-0" />
+                            <span>Status {sortField === "status" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden lg:table-cell`} onClick={() => handleSort("dateApplied")}>
-                          📅 Applied {sortField === "dateApplied" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Calendar className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                            <span>Applied {sortField === "dateApplied" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} cursor-pointer select-none hover:text-[#37352f] dark:hover:text-white transition hidden sm:table-cell`} onClick={() => handleSort("priority")}>
-                          🚩 Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}
+                          <span className="inline-flex items-center gap-1.5 align-middle">
+                            <Flag className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>Priority {sortField === "priority" && (sortDirection === "asc" ? "▲" : "▼")}</span>
+                          </span>
                         </th>
                         <th className={`${thPad} text-right`}>Actions</th>
                       </tr>
