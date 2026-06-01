@@ -3,7 +3,7 @@ import { Opportunity, OpportunityStatus, OpportunityTier, Priority } from "../ty
 import { 
   Pencil, PanelRightClose, AlertTriangle, ExternalLink, FileText, 
   Copy, Check, ChevronDown, ChevronUp, PlusCircle, History, Trash2, Gauge,
-  Save, Eye
+  Save, Eye, Sparkles, Cpu
 } from "lucide-react";
 import { getRiskOfOpportunity, getTodayString } from "../utils";
 
@@ -174,6 +174,7 @@ interface OpportunityDetailsProps {
   onUpdatePriority: (opp: Opportunity, priority: Priority) => void;
   onUpdateTier: (opp: Opportunity, tier: OpportunityTier) => void;
   onUpdateOpportunity?: (opp: Opportunity) => void;
+  customGeminiApiKey?: string;
 }
 
 export default function OpportunityDetails({
@@ -185,11 +186,90 @@ export default function OpportunityDetails({
   onUpdateStatus,
   onUpdatePriority,
   onUpdateTier,
-  onUpdateOpportunity
+  onUpdateOpportunity,
+  customGeminiApiKey = ""
 }: OpportunityDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [logInput, setLogInput] = useState("");
   const [isScorecardOpen, setIsScorecardOpen] = useState(false);
+
+  // AI Copilot states
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [aiTargetType, setAiTargetType] = useState("Outreach Email / Interview Follow-up");
+  const [aiOutput, setAiOutput] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [isCopiedAi, setIsCopiedAi] = useState(false);
+
+  // Clear AI Output on changing opportunity
+  useEffect(() => {
+    if (selectedOpp) {
+      setAiOutput("");
+      setAiError("");
+    }
+  }, [selectedOpp]);
+
+  const handleGenerateAiDraft = async () => {
+    if (!selectedOpp) return;
+    setIsAiLoading(true);
+    setAiError("");
+    setAiOutput("");
+    try {
+      const response = await fetch("/api/generate-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: selectedOpp.companyName,
+          roleTitle: selectedOpp.roleTitle,
+          status: selectedOpp.status,
+          currentNotes: selectedOpp.notes,
+          targetType: aiTargetType,
+          customApiKey: customGeminiApiKey
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Generation endpoint returned errors.");
+      }
+      setAiOutput(data.text);
+      
+      // Auto-add action log
+      if (onUpdateOpportunity) {
+        const newLog = {
+          id: `log-${Date.now()}`,
+          date: new Date().toLocaleDateString(undefined, { 
+            month: "short", 
+            day: "numeric", 
+            hour: "2-digit", 
+            minute: "2-digit" 
+          }),
+          text: `🤖 Copilot generated "${aiTargetType}"`
+        };
+        const updatedLogs = [newLog, ...(selectedOpp.logs || [])];
+        onUpdateOpportunity({
+          ...selectedOpp,
+          logs: updatedLogs,
+          lastActivityDate: getTodayString()
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAiError(err.message || "Unable to call the Gemini service.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleCopyAiOutput = async () => {
+    if (!aiOutput) return;
+    try {
+      await navigator.clipboard.writeText(aiOutput);
+      setIsCopiedAi(true);
+      setTimeout(() => setIsCopiedAi(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy AI output: ", err);
+    }
+  };
 
   // Notes inline markdown tab state
   const [editedNotes, setEditedNotes] = useState("");
@@ -876,9 +956,7 @@ export default function OpportunityDetails({
                     className={`p-1 rounded text-[10px] font-mono border transition flex items-center gap-1 ${
                       isCopiedNotes
                         ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
-                        : isDark
-                          ? "bg-[#252525] border-slate-700 text-slate-400 hover:text-white"
-                          : "bg-white border-neutral-250 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50"
+                        : theme.bgButtonSec
                     }`}
                     title="Copy raw markdown to clipboard"
                   >
@@ -967,6 +1045,95 @@ export default function OpportunityDetails({
             </div>
           )}
         </div>
+
+        {/* AI PILOT COCKPIT AND PLAYBOOK SHIEST (Improvement 2) */}
+        {onUpdateOpportunity && (
+          <div className={`p-4 rounded-xl border space-y-3 ${
+            isDark ? "bg-[#1d2736] border-blue-900/60" : "bg-blue-50/40 border-blue-200"
+          }`}>
+            <div className="flex items-center justify-between cursor-pointer animate-pulse-subtle" onClick={() => setIsAiOpen(!isAiOpen)}>
+              <div className="flex items-center gap-1.5">
+                <Sparkles className={`w-4 h-4 ${isDark ? "text-cyan-400" : "text-blue-600"}`} />
+                <span className={`font-mono font-bold text-[10.5px] uppercase tracking-wider ${
+                  isDark ? "text-cyan-400" : "text-blue-750"
+                }`}>AI Copilot Assistant</span>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[9px]">
+                <span className="flex h-1.5 w-1.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75 mr-1"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500 mr-1"></span>
+                </span>
+                <span className={isDark ? "text-cyan-400" : "text-[#1d2736] font-bold"}>{isAiOpen ? "COLLAPSE" : "OPEN"}</span>
+              </div>
+            </div>
+
+            <p className={`text-[10px] leading-relaxed ${isDark ? "text-slate-300" : "text-neutral-700 font-medium"}`}>
+              Draft outreach, map out technical questions, cover letters, and workflow blueprints utilizing server-side AI contextual analysis.
+            </p>
+
+            {isAiOpen && (
+              <div className="space-y-3 pt-2.5 border-t border-dashed border-blue-500/10 dark:border-blue-550/15">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block">Deliverable Mode:</span>
+                  <select
+                    value={aiTargetType}
+                    onChange={(e) => setAiTargetType(e.target.value)}
+                    className={`w-full border rounded p-2 focus:outline-none text-xs font-mono cursor-pointer ${theme.bgInput}`}
+                  >
+                    <option value="Outreach Email / Interview Follow-up">✉️ Outreach Email / Follow-up</option>
+                    <option value="Interview Preparation Blueprint">📋 Interview Preparation Q&A</option>
+                    <option value="Action Checklist & Cover Letter">🚀 Checklist & Custom Cover Letter</option>
+                    <option value="Strategic Process Optimization">⚙️ Strategic Workflow Optimization SOP</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateAiDraft}
+                  disabled={isAiLoading}
+                  className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-550 text-white rounded font-bold font-sans text-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>{isAiLoading ? "Processing Client-Server Context..." : "Generate AI Copilot Playbook ⚡"}</span>
+                </button>
+
+                {aiError && (
+                  <div className="p-2.5 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] leading-relaxed select-text">
+                    ⚠️ {aiError}
+                  </div>
+                )}
+
+                {aiOutput && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-sky-800/10 p-1.5 rounded border border-sky-500/10 text-[10px] font-mono uppercase">
+                      <span className="text-sky-400 font-bold">Generated Playbook Outline</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyAiOutput}
+                        className={`px-1.5 py-0.5 rounded border flex items-center gap-1 transition-all ${
+                          isCopiedAi
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                            : theme.bgButtonSec
+                        }`}
+                      >
+                        {isCopiedAi ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        <span>{isCopiedAi ? "Copied!" : "Copy"}</span>
+                      </button>
+                    </div>
+
+                    <div className={`p-4 rounded-lg leading-relaxed text-xs max-h-80 overflow-y-auto border space-y-2 select-text ${
+                      isDark 
+                        ? "bg-[#121212] text-slate-350 border-slate-850" 
+                        : "bg-white text-neutral-800 border-neutral-250 shadow-inner"
+                    }`}>
+                      {renderMarkdown(aiOutput, isDark)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Interactive Action Sequence Timeline Log */}
         {onUpdateOpportunity && (

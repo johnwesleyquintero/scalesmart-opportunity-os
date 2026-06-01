@@ -6,7 +6,8 @@ import {
   Sun, Moon, GripVertical, Search, Pencil,
   PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Keyboard, HelpCircle,
   Copy, RotateCcw, SlidersHorizontal, LayoutList,
-  Building2, Briefcase, Globe, Activity, Calendar, Flag, AlertCircle, Archive, Target, Sparkles, Files, MessageSquare, Zap
+  Building2, Briefcase, Globe, Activity, Calendar, Flag, AlertCircle, Archive, Target, Sparkles, Files, MessageSquare, Zap,
+  Kanban
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -49,6 +50,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem("scalesmart_dark_theme", String(isDark));
+    document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
 
   // Table padding list-density settings view preference
@@ -98,6 +100,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<"cockpit" | "radar">("cockpit");
   const [filter, setFilter] = useState<FilterType>("ALL");
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>("1");
   const [focusedId, setFocusedId] = useState<string | null>("1");
@@ -853,6 +856,16 @@ export default function App() {
           setToast({ message: "Partition filter: ARCHIVES [5]", type: "info" });
           return;
         }
+        if (e.key.toLowerCase() === "v") {
+          setViewMode("table");
+          setToast({ message: "Switched to Spreadsheet Grid Layout [V]", type: "info" });
+          return;
+        }
+        if (e.key.toLowerCase() === "b") {
+          setViewMode("kanban");
+          setToast({ message: "Switched to Kanban Board Layout [B]", type: "info" });
+          return;
+        }
       }
 
       if (e.ctrlKey && e.key === "\\") {
@@ -1121,6 +1134,67 @@ export default function App() {
                         <span className={`text-[9px] px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>{numDormant}</span>
                       </button>
                     </div>
+
+                    {/* ATTENTION RED FLAG RADAR WIDGET (Improvement 3) */}
+                    <div className="space-y-2 pt-4 border-t border-[#2c2c2c]/10 dark:border-slate-850">
+                      <span className="text-[9px] font-mono font-bold uppercase text-slate-500 block px-1 tracking-wider">Priority Alert Radar</span>
+                      {(() => {
+                        const alertLeads = opportunities.filter(o => getRiskOfOpportunity(o).type !== "none");
+                        if (alertLeads.length === 0) {
+                          return (
+                            <div className={`p-2.5 rounded-lg border text-center font-mono text-[9.5px] ${
+                              isDark 
+                                ? "bg-emerald-550/5 border-emerald-500/10 text-emerald-400" 
+                                : "bg-emerald-50/20 border-emerald-100 text-emerald-700"
+                            }`}>
+                              🟢 Pipeline Secure • 0 Alerts
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-0.5 scrollbar-thin">
+                            {alertLeads.map((opp) => {
+                              const rk = getRiskOfOpportunity(opp);
+                              const isFocused = opp.id === focusedId;
+
+                              return (
+                                <div
+                                  key={opp.id}
+                                  onClick={() => {
+                                    setSelectedId(opp.id);
+                                    setFocusedId(opp.id);
+                                    setIsRightSidebarOpen(true);
+                                    // Scroll automatically
+                                    const el = document.getElementById(viewMode === "kanban" ? `detail-card` : `row-${opp.id}`);
+                                    if (el && typeof el.scrollIntoView === "function") {
+                                      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                                    }
+                                    setToast({ message: `Focused "${opp.companyName}" alert: ${rk.message}`, type: "info" });
+                                  }}
+                                  className={`p-2 rounded-lg border transition-all cursor-pointer text-left ${
+                                    isFocused
+                                      ? "bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-450"
+                                      : isDark
+                                        ? "bg-[#181818] border-slate-850 hover:border-rose-900/40 hover:bg-[#1f1f1f] text-slate-300"
+                                        : "bg-white border-neutral-200 hover:border-rose-400/30 hover:bg-rose-50/5 text-[#37352f]"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between font-bold text-[9.5px] uppercase tracking-tight leading-none">
+                                    <span className="truncate max-w-[100px]">{opp.companyName}</span>
+                                    <span className="text-[7.5px] px-1 py-0.2 bg-rose-500/15 text-rose-500 border border-rose-500/20 rounded font-black shrink-0">
+                                      {opp.priority}
+                                    </span>
+                                  </div>
+                                  <p className="text-[8.5px] mt-1 text-slate-500 truncate leading-none">
+                                    {rk.message}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1160,50 +1234,93 @@ export default function App() {
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       onClick={handleCopyMarkdown}
-                      className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${
+                      className={`p-2.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center transition-colors border relative cursor-pointer ${
                         selectedRowIds.length > 0
-                          ? "bg-[#252525] text-cyan-400 border-cyan-400/30 dark:bg-slate-900/80 dark:text-cyan-400 dark:border-cyan-500/20"
+                          ? "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/15 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30 dark:hover:bg-cyan-500/15"
                           : theme.bgButtonSec
                       }`}
                       title={
                         selectedRowIds.length > 0
                           ? `Copy ${selectedRowIds.length} selected lead(s) as a Markdown table`
-                          : "Copy entire visible list as a Markdown table"
+                          : "Copy entire visible list as a Markdown table (Shift + C)"
                       }
                     >
-                      <Copy className={`w-3.5 h-3.5 ${selectedRowIds.length > 0 ? "text-cyan-400 animate-pulse" : ""}`} />
-                      Copy MD {selectedRowIds.length > 0 && `(${selectedRowIds.length})`}
+                      <Copy className={`w-4 h-4 ${
+                        selectedRowIds.length > 0
+                          ? "text-blue-600 dark:text-cyan-400 animate-pulse"
+                          : "text-slate-500 dark:text-[#9b9a97]"
+                      }`} />
+                      {selectedRowIds.length > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-blue-600 dark:bg-cyan-400 text-white dark:text-neutral-950 font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow-xs border border-blue-300 dark:border-cyan-300">
+                          {selectedRowIds.length}
+                        </span>
+                      )}
                     </button>
                     <button
                       onClick={handleExportCSV}
-                      className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${theme.bgButtonSec}`}
-                      title="Generates fully formatted spreadsheets CSV document download"
+                      className={`p-2.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center transition-all border cursor-pointer ${theme.bgButtonSec}`}
+                      title="Export database as a spreadsheet CSV direct download"
                     >
-                      <Download className="w-3.5 h-3.5" /> Export DB
+                      <Download className="w-4 h-4 text-slate-500 dark:text-[#9b9a97]" />
                     </button>
                     <button
                       onClick={triggerLiveScan}
                       disabled={isConnecting}
-                      className={`p-2 rounded text-xs font-mono font-bold flex items-center gap-1.5 transition border ${
+                      className={`p-2.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center transition-all border ${
                         isConnecting 
                           ? "opacity-50 cursor-not-allowed" 
-                          : isDark 
-                            ? "bg-slate-900/85 border-emerald-500/30 text-emerald-400 hover:bg-slate-800 hover:text-emerald-300" 
-                            : "bg-emerald-50/70 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                          : theme.bgButtonSec
                       }`}
-                      title="Command Google Apps Script to run scanGmailSignals() live and fetch updated data"
+                      title="Data Sync: Command Google Apps Script to scan Gmail and update spreadsheet live"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${isConnecting ? "animate-spin" : ""}`} />
-                      Data Sync
+                      <RefreshCw className={`w-4 h-4 text-slate-500 dark:text-[#9b9a97] ${isConnecting ? "animate-spin text-blue-600 dark:text-cyan-400" : ""}`} />
                     </button>
+
+                    {/* Interactive Spreadsheet vs Kanban View Toggle */}
+                    <div className="flex items-center gap-0.5 bg-neutral-200/50 dark:bg-[#1a1a1a] p-1 rounded-lg border border-neutral-300 dark:border-[#2c2c2c] shrink-0 shadow-xs">
+                      <button
+                        onClick={() => {
+                          setViewMode("table");
+                          setToast({ message: "Activated Spreadsheet Grid Layout", type: "info" });
+                        }}
+                        className={`p-1.5 rounded-md flex items-center justify-center cursor-pointer transition-all ${
+                          viewMode === "table"
+                            ? "bg-blue-500/10 text-blue-600 border border-blue-500/30 shadow-xs font-bold dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30"
+                            : "text-slate-500 hover:text-slate-900 border border-transparent dark:text-[#9b9a97] dark:hover:text-white"
+                        }`}
+                        title="Switch to Spreadsheet Grid Layout (V)"
+                      >
+                        <LayoutList className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setViewMode("kanban");
+                          setToast({ message: "Activated Notion Pipeline Kanban", type: "info" });
+                        }}
+                        className={`p-1.5 rounded-md flex items-center justify-center cursor-pointer transition-all ${
+                          viewMode === "kanban"
+                            ? "bg-blue-500/10 text-blue-600 border border-blue-500/30 shadow-xs font-bold dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/30"
+                            : "text-slate-500 hover:text-slate-900 border border-transparent dark:text-[#9b9a97] dark:hover:text-white"
+                        }`}
+                        title="Switch to Notion Pipeline Kanban Board (B)"
+                      >
+                        <Kanban className="w-4 h-4" />
+                      </button>
+                    </div>
+
                     <button
                       onClick={openAddModal}
-                      className="p-2 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold rounded flex items-center gap-1.5 tracking-tight transition shadow-xs cursor-pointer font-sans"
+                      className={`p-2.5 rounded-lg flex items-center justify-center transition-colors shadow-xs cursor-pointer border ${
+                        isDark 
+                          ? "bg-[#2eaadc] hover:bg-[#2eaadc]/90 text-neutral-950 border-cyan-500/20 font-bold" 
+                          : "bg-blue-600 hover:bg-blue-700 text-white border-blue-700/10 font-bold"
+                      }`}
+                      title="Import New Lead (C)"
                     >
-                      <Plus className="w-4 h-4" /> Import Lead
+                      <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1669,6 +1786,207 @@ export default function App() {
                       Try loosening search descriptors, choosing "ALL TARGETS", or run a Gmail sweep in the Signal Radar hub!
                     </p>
                   </div>
+                ) : viewMode === "kanban" ? (
+                  // GORGEOUS NOTION-STYLE DRAG & DROP KANBAN BOARD (Improvement 1)
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 select-none py-1 align-top items-start">
+                    {(() => {
+                      const kanbanColumns = [
+                        { label: "New Leads", status: "NEW" as const, bg: isDark ? "bg-[#181818]/60 border-[#2c2c2c]/80" : "bg-[#fbfbfa] border-[#eae9e6]/80", dot: "bg-slate-400", text: "text-slate-400" },
+                        { label: "Applied", status: "APPLIED" as const, bg: isDark ? "bg-indigo-950/10 border-indigo-900/15" : "bg-indigo-50/10 border-indigo-100", dot: "bg-indigo-550", text: "text-indigo-400" },
+                        { label: "Assessment", status: "ASSESSMENT_PENDING" as const, bg: isDark ? "bg-amber-955/10 border-amber-900/15" : "bg-amber-50/10 border-amber-100", dot: "bg-amber-500", text: "text-amber-500" },
+                        { label: "Interviewing", status: "INTERVIEWING" as const, bg: isDark ? "bg-sky-955/10 border-sky-900/15" : "bg-[#f0f9ff]/50 border-sky-100", dot: "bg-sky-400", text: "text-sky-500" },
+                        { label: "Offered 🌟", status: "OFFER" as const, bg: isDark ? "bg-emerald-955/15 border-emerald-900/15" : "bg-emerald-50/15 border-emerald-100", dot: "bg-emerald-500", text: "text-emerald-500 font-bold animate-pulse" },
+                        { label: "Inactives", status: "REJECTED_DORMANT" as const, bg: isDark ? "bg-rose-955/5 border-rose-900/10" : "bg-rose-50/5 border-rose-100", dot: "bg-rose-500", text: "text-rose-500" }
+                      ];
+
+                      return kanbanColumns.map((col) => {
+                        const columnItems = sorted.filter(item => {
+                          if (col.status === "REJECTED_DORMANT") {
+                            return ["REJECTED", "DORMANT", "ARCHIVED"].includes(item.status);
+                          }
+                          return item.status === col.status;
+                        });
+
+                        return (
+                          <div
+                            key={col.status}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                            }}
+                            onDrop={() => {
+                              if (draggingId) {
+                                const opp = opportunities.find(o => o.id === draggingId);
+                                if (opp) {
+                                  const targetStatus: OpportunityStatus = col.status === "REJECTED_DORMANT" ? "REJECTED" : col.status;
+                                  updateStatus(opp, targetStatus);
+                                }
+                                setDraggingId(null);
+                              }
+                            }}
+                            className={`flex flex-col rounded-xl border p-3 min-h-[380px] transition-all relative ${
+                              col.bg
+                            }`}
+                          >
+                            {/* Column Header */}
+                            <div className="flex justify-between items-center mb-3 border-b border-[#eae9e6]/10 dark:border-slate-800/40 pb-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className={`w-2 h-2 rounded-full ${col.dot} shrink-0`} />
+                                <span className={`text-[10.5px] font-mono font-bold tracking-tight uppercase truncate ${col.text}`}>
+                                  {col.label}
+                                </span>
+                              </div>
+                              <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded border ${theme.indicatorBg}`}>
+                                {columnItems.length}
+                              </span>
+                            </div>
+
+                            {/* Cards area */}
+                            <div className="space-y-3.5 flex-1 overflow-y-auto max-h-[62vh] pr-0.5 scrollbar-thin">
+                              {columnItems.length === 0 ? (
+                                <div className="h-full flex items-center justify-center border border-dashed border-slate-700/10 dark:border-slate-800/20 rounded-lg p-5 text-center text-[10px] text-slate-400 italic font-mono py-12 select-none">
+                                  Drag items here
+                                </div>
+                              ) : (
+                                columnItems.map((item) => {
+                                  const isFocused = item.id === focusedId;
+                                  const isSelected = item.id === selectedId;
+                                  const rk = getRiskOfOpportunity(item);
+
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      draggable
+                                      onDragStart={() => setDraggingId(item.id)}
+                                      onDragEnd={() => setDraggingId(null)}
+                                      onClick={() => { setSelectedId(item.id); setFocusedId(item.id); }}
+                                      onDoubleClick={() => {
+                                        setSelectedId(item.id);
+                                        setFocusedId(item.id);
+                                        setIsRightSidebarOpen(true);
+                                      }}
+                                      className={`p-3.5 rounded-lg border text-left transition-all duration-150 cursor-grab active:cursor-grabbing relative ${
+                                        isDark 
+                                          ? isSelected 
+                                            ? "bg-[#2c3d59]/95 border-blue-500/90 text-white" 
+                                            : isFocused
+                                            ? "bg-slate-800/90 border-slate-700"
+                                            : "bg-[#202020] border-slate-800 hover:border-slate-700 text-slate-100" 
+                                          : isSelected
+                                          ? "bg-blue-50 border-blue-400 text-slate-900"
+                                          : isFocused
+                                          ? "bg-[#f5f5f4] border-stone-250"
+                                          : "bg-white border-[#eae9e6] hover:border-stone-300 text-[#37352f]"
+                                      } ${
+                                        draggingId === item.id ? "opacity-30 border-dashed" : "hover:scale-[1.02] shadow-sm transform-gpu"
+                                      }`}
+                                    >
+                                      {/* Urgency Highlight Light */}
+                                      {rk.type !== "none" && (
+                                        <div className="absolute top-2.5 right-2.5 flex h-2 w-2">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 animate-duration-1000"></span>
+                                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500 animate-pulse animate-duration-1000" title={rk.message}></span>
+                                        </div>
+                                      )}
+
+                                      {/* Firm Title & Role */}
+                                      <div className="pr-4">
+                                        <h4 className="font-sans font-black text-xs tracking-tight leading-normal uppercase truncate">
+                                          {item.companyName}
+                                        </h4>
+                                        <p className={`text-[10px] truncate leading-tight mt-0.5 font-medium ${
+                                          isDark ? "text-slate-400" : "text-stone-500"
+                                        }`}>
+                                          {item.roleTitle}
+                                        </p>
+                                      </div>
+
+                                      {/* Sub information row */}
+                                      <div className="mt-4 space-y-1.5 text-[9px] font-mono leading-none border-t border-[#eae9e6]/10 dark:border-slate-800/60 pt-2.5 pb-0.5">
+                                        {/* Row 1: Priority Tag */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="opacity-65 font-bold">PRIORITY</span>
+                                          <span className={`px-1.5 py-0.2 rounded font-black ${
+                                            item.priority === "P0" 
+                                              ? "bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/20" 
+                                              : item.priority === "P1"
+                                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                              : "bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/10"
+                                          }`}>
+                                            {item.priority}
+                                          </span>
+                                        </div>
+
+                                        {/* Row 2: WesBI Evaluation Score tag */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="opacity-65 font-bold">WESBI SCORE</span>
+                                          <span className={`px-1.5 py-0.2 rounded font-black ${
+                                            (item.score ?? 0) >= 80 
+                                              ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/20" 
+                                              : (item.score ?? 0) >= 50
+                                              ? "bg-amber-500/15 text-amber-500 border border-amber-500/20"
+                                              : "bg-slate-500/10 text-slate-500 border border-slate-500/10"
+                                          }`}>
+                                            {item.score ?? "Unrated"}
+                                          </span>
+                                        </div>
+
+                                        {/* Row 3: Channels */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="opacity-65 font-bold">CHANNEL</span>
+                                          <span className="font-bold text-sky-400 hover:underline max-w-[90px] truncate" title={item.link}>
+                                            {item.source}
+                                          </span>
+                                        </div>
+
+                                        {/* Row 4: Category */}
+                                        <div className="flex items-center justify-between">
+                                          <span className="opacity-65 font-bold">SYSTEM DIVISION</span>
+                                          <span className="truncate max-w-[80px] font-bold">
+                                            {item.category || "General"}
+                                          </span>
+                                        </div>
+
+                                        {/* Row 5: Action Countdown & Days Left */}
+                                        {item.nextActionDate && item.nextActionDate !== "No planned action" && (
+                                          <div className={`flex items-center justify-between py-0.5 rounded px-1 -mx-0.5 ${
+                                            rk.type === "deadline_missed" 
+                                              ? "bg-rose-500/15 text-rose-500" 
+                                              : "bg-slate-100 dark:bg-slate-900/60"
+                                          }`}>
+                                            <span className="opacity-75 font-bold">LIMIT</span>
+                                            <span className="font-black truncate max-w-[90px]" title="Next planned operation countdown limit">{item.nextActionDate}</span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Mini Action triggers inside Kanban Cards */}
+                                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-500/10 dark:border-slate-800/30">
+                                        <span className={`text-[8px] font-mono tracking-tighter opacity-50`}>
+                                          T1: systems • T2: specialist • T3: VA
+                                        </span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedId(item.id);
+                                            setFocusedId(item.id);
+                                            setIsRightSidebarOpen(true);
+                                          }}
+                                          className={`px-1.5 py-0.5 border rounded text-[8px] font-mono uppercase bg-slate-500/10 text-slate-500 hover:text-sky-400 hover:bg-slate-800 shrink-0 select-none cursor-pointer`}
+                                        >
+                                          inspector
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 ) : (
                   <table className={`w-full text-left text-xs border-collapse relative font-sans ${isDark ? "border-slate-855" : "border-[#eae9e6]"}`} id="opportunity-table">
                     <thead className="sticky top-0 z-20">
@@ -2036,6 +2354,7 @@ export default function App() {
                       onUpdatePriority={updatePriority}
                       onUpdateTier={updateTier}
                       onUpdateOpportunity={updateOpportunity}
+                      customGeminiApiKey={customGeminiApiKey}
                     />
                   </aside>
                 </>
